@@ -84,6 +84,7 @@ class AceIdApi(
             val stream = if (status in 200..299) http.inputStream else http.errorStream
             val payload = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
             val parsed = parse(payload)
+            val parsedOk = payload.isBlank() || isJsonObject(payload)
 
             if (status !in 200..299) {
                 val code = parsed.optString("error").ifBlank { null }
@@ -102,7 +103,13 @@ class AceIdApi(
             }
 
             if (isRead) {
-                cache.write(path, parsed, http.getHeaderField("ETag"))
+                // Never overwrite a good snapshot with an empty or malformed
+                // 200 body (e.g. a proxy error page). Fall back to the cache.
+                if (parsedOk && payload.isNotBlank()) {
+                    cache.write(path, parsed, http.getHeaderField("ETag"))
+                } else if (cached != null) {
+                    return@withContext cached.data
+                }
             } else {
                 cache.clear()
             }
@@ -122,6 +129,13 @@ class AceIdApi(
         if (payload.isBlank()) JSONObject() else JSONObject(payload)
     } catch (error: Exception) {
         JSONObject()
+    }
+
+    private fun isJsonObject(payload: String): Boolean = try {
+        JSONObject(payload)
+        true
+    } catch (error: Exception) {
+        false
     }
 
     private fun encodePathSegment(value: String): String =

@@ -168,7 +168,7 @@ fun ConnectedAppsScreen(api: AceIdApi, onMessage: (String) -> Unit) {
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        text = "Access: " + scopes.joinToString(", "),
+                        text = if (scopes.isEmpty()) "Access: openid" else "Access: " + scopes.joinToString(", "),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.content,
                     )

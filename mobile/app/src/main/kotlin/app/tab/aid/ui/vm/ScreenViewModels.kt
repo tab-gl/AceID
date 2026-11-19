@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import app.tab.aid.data.AceIdApi
 import app.tab.aid.data.activityLogs
 import app.tab.aid.data.optObjects
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,6 +45,8 @@ class OverviewViewModel(private val api: AceIdApi) : ViewModel() {
                     account = account,
                     error = null,
                 )
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 _state.value = _state.value.copy(
                     loading = false,
@@ -70,25 +75,37 @@ class SecurityViewModel(private val api: AceIdApi) : ViewModel() {
     }
 
     fun refresh() {
-        _state.value = _state.value.copy(loading = true, refreshing = true, error = null)
+        val current = _state.value
+        val firstLoad = current.devices.isEmpty() && current.logs.isEmpty()
+        _state.value = current.copy(loading = firstLoad, refreshing = !firstLoad, error = null)
         viewModelScope.launch {
-            try {
-                val devices = api.devices()
-                val logs = api.logs()
-                _state.value = SecurityUiState(
-                    loading = false,
-                    refreshing = false,
-                    devices = devices.optObjects("devices"),
-                    logs = activityLogs(logs),
-                    error = null,
-                )
-            } catch (error: Exception) {
-                _state.value = _state.value.copy(
-                    loading = false,
-                    refreshing = false,
-                    error = error.message ?: "Could not load your security activity.",
-                )
+            // Fetch in parallel so one slow endpoint does not block the other,
+            // and keep whichever half succeeded instead of discarding both.
+            val (devicesResult, logsResult) = coroutineScope {
+                val devicesDeferred = async { runCatching { api.devices() } }
+                val logsDeferred = async { runCatching { api.logs() } }
+                devicesDeferred.await() to logsDeferred.await()
             }
+            val devicesError = devicesResult.exceptionOrNull()
+            val logsError = logsResult.exceptionOrNull()
+            if (devicesError is CancellationException) throw devicesError
+            if (logsError is CancellationException) throw logsError
+            val devices = devicesResult.getOrNull()?.optObjects("devices") ?: _state.value.devices
+            val logs = logsResult.getOrNull()?.let { activityLogs(it) } ?: _state.value.logs
+            val error = when {
+                devicesError != null && logsError != null ->
+                    devicesError.message ?: "Could not load your security activity."
+                devicesError != null -> devicesError.message ?: "Could not load signed-in devices."
+                logsError != null -> logsError.message ?: "Could not load recent activity."
+                else -> null
+            }
+            _state.value = SecurityUiState(
+                loading = false,
+                refreshing = false,
+                devices = devices,
+                logs = logs,
+                error = error,
+            )
         }
     }
 }
@@ -110,7 +127,12 @@ class ConnectedAppsViewModel(private val api: AceIdApi) : ViewModel() {
     }
 
     fun refresh() {
-        _state.value = _state.value.copy(loading = true, refreshing = true, error = null)
+        val current = _state.value
+        _state.value = current.copy(
+            loading = current.apps.isEmpty(),
+            refreshing = current.apps.isNotEmpty(),
+            error = null,
+        )
         viewModelScope.launch {
             try {
                 val apps = api.connectedApps().optObjects("connectedApps")
@@ -120,6 +142,8 @@ class ConnectedAppsViewModel(private val api: AceIdApi) : ViewModel() {
                     apps = apps,
                     error = null,
                 )
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 _state.value = _state.value.copy(
                     loading = false,
@@ -138,6 +162,8 @@ class ConnectedAppsViewModel(private val api: AceIdApi) : ViewModel() {
                 api.revokeApp(grantId)
                 onResult("App disconnected.")
                 refresh()
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 onResult(error.message ?: "Could not disconnect that app.")
             } finally {
@@ -179,6 +205,8 @@ class ProfileViewModel(private val api: AceIdApi) : ViewModel() {
                     account = account,
                     error = null,
                 )
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 _state.value = _state.value.copy(
                     loading = false,
@@ -201,6 +229,9 @@ class ProfileViewModel(private val api: AceIdApi) : ViewModel() {
                 )
                 onResult(true, null)
                 refresh()
+            } catch (error: CancellationException) {
+                _state.value = _state.value.copy(saving = false)
+                throw error
             } catch (error: Exception) {
                 _state.value = _state.value.copy(saving = false)
                 onResult(false, error.message ?: "Could not save your changes.")

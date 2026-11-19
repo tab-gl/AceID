@@ -10,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import app.tab.aid.ui.AceIdRoot
 import app.tab.aid.ui.AppViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -19,7 +20,12 @@ class MainActivity : ComponentActivity() {
 
     private val authorizationLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            appViewModel.completeSignIn(result.data)
+            if (result.resultCode != android.app.Activity.RESULT_OK) {
+                // Back press / tab dismiss: a cancellation, not a failure.
+                appViewModel.onSignInFailed("Sign-in was cancelled. Tap Continue with Ace ID to try again.")
+            } else {
+                appViewModel.completeSignIn(result.data)
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +46,8 @@ class MainActivity : ComponentActivity() {
             try {
                 val request = container.authRepository.createAuthorizationRequest()
                 authorizationLauncher.launch(container.authRepository.authorizationIntent(request))
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 appViewModel.onSignInFailed(
                     error.message ?: "Sign-in did not finish. Check your connection and try again.",

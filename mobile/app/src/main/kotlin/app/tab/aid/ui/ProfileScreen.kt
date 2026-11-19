@@ -167,7 +167,7 @@ fun ProfileScreen(
             item {
                 Spacer(Modifier.height(6.dp))
                 ActionTile(
-                    icon = AceIcons.Lock,
+                    icon = AceIcons.Key,
                     title = "Password & sign-in",
                     subtitle = "Change password and recovery options",
                     onClick = { onOpenWeb("/account/security") },
@@ -183,7 +183,7 @@ fun ProfileScreen(
             }
             item {
                 ActionTile(
-                    icon = AceIcons.Shield,
+                    icon = AceIcons.Fingerprint,
                     title = "Passkeys & two-factor authentication",
                     subtitle = "Manage stronger sign-in methods",
                     onClick = { onOpenWeb("/account/security") },
@@ -233,10 +233,12 @@ private fun EditProfileSheet(
     onSave: (JSONObject) -> Unit,
 ) {
     val colors = LocalAceColors.current
-    var displayName by remember { mutableStateOf(account?.optString("display_name") ?: fallbackName) }
-    var username by remember { mutableStateOf(account?.optString("username").orEmpty()) }
-    var email by remember { mutableStateOf(account?.optString("email") ?: fallbackEmail) }
-    var avatarUrl by remember { mutableStateOf(account?.optString("avatar_url").orEmpty()) }
+    // Keyed on the loaded account so fields refresh if it arrives after the
+    // sheet is first composed (e.g. a slow first load).
+    var displayName by remember(account) { mutableStateOf(account?.optString("display_name") ?: fallbackName) }
+    var username by remember(account) { mutableStateOf(account?.optString("username").orEmpty()) }
+    var email by remember(account) { mutableStateOf(account?.optString("email") ?: fallbackEmail) }
+    var avatarUrl by remember(account) { mutableStateOf(account?.optString("avatar_url").orEmpty()) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(

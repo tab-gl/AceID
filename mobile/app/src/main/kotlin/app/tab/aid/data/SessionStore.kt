@@ -24,7 +24,9 @@ class SessionStore(private val store: SecureStore) {
         store.write(KEY_ACCESS_TOKEN, accessToken)
         if (!refreshToken.isNullOrBlank()) store.write(KEY_REFRESH_TOKEN, refreshToken)
         if (!idToken.isNullOrBlank()) store.write(KEY_ID_TOKEN, idToken)
-        if (profile != null) store.write(KEY_PROFILE, profile.toJson()) else store.delete(KEY_PROFILE)
+        // A null profile means "no new claims" (e.g. a refresh without an ID
+        // token), not "forget the user". Only clearSession() removes it.
+        if (profile != null) store.write(KEY_PROFILE, profile.toJson())
         store.write(KEY_EXPIRES_AT, expiresAtEpochMillis.toString())
     }
 
