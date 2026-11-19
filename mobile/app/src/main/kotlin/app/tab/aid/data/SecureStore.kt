@@ -56,10 +56,12 @@ class SecureStore(context: Context) {
     fun keysWithPrefix(prefix: String): List<String> =
         preferences.all.keys.filter { it.startsWith(prefix) }
 
-    private fun secretKey(): SecretKey {
+    // Synchronized so two concurrent first-writes cannot generate two keys
+    // and orphan the value encrypted with the first one.
+    private fun secretKey(): SecretKey = synchronized(this) {
         val keyStore = KeyStore.getInstance(PROVIDER).apply { load(null) }
         val existing = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
-        if (existing != null) return existing.secretKey
+        if (existing != null) return@synchronized existing.secretKey
 
         val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, PROVIDER)
         generator.init(
@@ -72,7 +74,7 @@ class SecureStore(context: Context) {
                 .setKeySize(256)
                 .build(),
         )
-        return generator.generateKey()
+        generator.generateKey()
     }
 
     private companion object {

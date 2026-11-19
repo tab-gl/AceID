@@ -145,8 +145,8 @@ fun OverviewScreen(
                             }
                         }
                         Icon(
-                            imageVector = AceIcons.Shield,
-                            contentDescription = null,
+                            imageVector = if (verified) AceIcons.ShieldCheck else AceIcons.Shield,
+                            contentDescription = if (verified) "Verified ID" else "ID",
                             tint = colors.content,
                             modifier = Modifier.size(22.dp),
                         )

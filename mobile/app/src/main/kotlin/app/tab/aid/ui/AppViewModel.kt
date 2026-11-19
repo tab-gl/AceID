@@ -11,6 +11,7 @@ import app.tab.aid.AppContainer
 import app.tab.aid.data.AceIdApi
 import app.tab.aid.data.IdentityProfile
 import app.tab.aid.data.ThemeMode
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -80,6 +81,8 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
                 _signingIn.value = false
                 _signInError.value = null
                 _session.value = SessionState.SignedIn(profile)
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 onSignInFailed(
                     error.message ?: "Sign-in did not finish. Check your connection and try again.",

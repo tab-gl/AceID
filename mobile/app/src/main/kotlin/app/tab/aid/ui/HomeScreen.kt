@@ -35,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.tab.aid.auth.AceIdConfig
 import app.tab.aid.data.AceIdApi
@@ -110,7 +112,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) { index ->
-            when (Tab.entries[index]) {
+            when (Tab.entries.getOrElse(index) { Tab.Home }) {
                 Tab.Home -> OverviewScreen(
                     profile = profile,
                     api = api,
@@ -149,6 +151,7 @@ private fun FloatingNavigationBar(selected: Int, onSelect: (Int) -> Unit) {
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 10.dp)
+            .background(colors.background)
             .border(1.dp, colors.border)
             .padding(6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -159,7 +162,14 @@ private fun FloatingNavigationBar(selected: Int, onSelect: (Int) -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .background(if (active) colors.content else Color.Transparent)
-                    .clickable { onSelect(index) }
+                    .clickable(
+                        role = androidx.compose.ui.semantics.Role.Tab,
+                        onClickLabel = tab.label,
+                        onClick = { onSelect(index) },
+                    )
+                    .semantics {
+                        selected = active
+                    }
                     .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

@@ -129,11 +129,17 @@ class AuthRepository(
             )
         }
 
-        persist(tokenResponse)
-            ?: throw AuthConfigurationException(
+        val profile = persist(tokenResponse)
+        if (profile == null) {
+            // persist() already stored the tokens; drop them so a failed
+            // sign-in never leaves a half-session behind.
+            session.clearSession()
+            throw AuthConfigurationException(
                 "The identity provider returned an invalid ID token. " +
                     "Check the issuer and OIDC client configuration.",
             )
+        }
+        profile
     }
 
     /** Returns a valid access token, refreshing it first when it is close to expiry. */
@@ -220,7 +226,8 @@ class AuthRepository(
 
     private fun revoke(endpoint: String, token: String, hint: String) {
         val url = java.net.URL(endpoint)
-        if (url.protocol != "https" && url.host != "localhost" && url.host != "127.0.0.1") return
+        val loopback = url.host == "localhost" || url.host == "127.0.0.1" || url.host == "::1"
+        if (url.protocol != "https" && !loopback) return
         val connection = url.openConnection() as java.net.HttpURLConnection
         try {
             connection.requestMethod = "POST"
@@ -257,7 +264,9 @@ class AuthRepository(
         val accessToken = response.accessToken ?: return null
         val expiresAt = response.accessTokenExpirationTime
             ?: (System.currentTimeMillis() + DEFAULT_TOKEN_LIFETIME_MILLIS)
-        val profile = Jwt.profileFrom(response.idToken, expiresAt)
+        // A refresh response often omits the ID token. Keep the stored profile
+        // in that case instead of wiping it (which would end the session).
+        val profile = Jwt.profileFrom(response.idToken, expiresAt) ?: session.profile()
         session.saveSession(
             accessToken = accessToken,
             refreshToken = response.refreshToken,

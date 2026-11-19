@@ -118,7 +118,7 @@ fun SignInScreen(
                     color = colors.background,
                 )
             } else {
-                Icon(AceIcons.Open, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(AceIcons.Login, contentDescription = null, modifier = Modifier.size(18.dp))
             }
             Spacer(Modifier.width(10.dp))
             Text(
