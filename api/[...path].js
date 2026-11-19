@@ -45,10 +45,57 @@ const ALLOWED_API_PREFIXES = [
   "/api/login",
 ];
 
+// Reasonable verbs for the account API. Anything else is refused here instead
+// of being smuggled to the backend.
+const ALLOWED_METHODS = new Set([
+  "GET",
+  "HEAD",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "OPTIONS",
+]);
+
 function isAllowedApiPath(pathname) {
   return ALLOWED_API_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
   );
+}
+
+// Percent-decoding view of a request path, used to close encoded traversal
+// (/api/account/..%2f..%2fadmin) that a raw allowlist check would pass but a
+// decoding upstream router would resolve to a different endpoint. The check
+// must succeed on both the raw and the decoded form.
+function decodedPathname(pathname) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return null;
+  }
+  if (decoded.includes("\\") || decoded.includes("\0") || decoded.includes("?") || decoded.includes("#")) {
+    return null;
+  }
+  try {
+    return new URL(decoded, "https://vercel-internal.invalid").pathname;
+  } catch {
+    return null;
+  }
+}
+
+// The public host is echoed to the backend in X-Forwarded-Host, which the
+// issuer uses to build URLs. Never echo an unvalidated Host header: that is
+// host-header injection into every redirect and email link the backend emits.
+function resolvePublicHost(rawHost) {
+  const allowed = String(process.env.ACEID_PUBLIC_HOSTS || "identity.ace-base.cc")
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+  const fallback = allowed[0] || "identity.ace-base.cc";
+  const host = String(rawHost || "").toLowerCase();
+  const bare = host.replace(/:\d+$/, "");
+  return allowed.includes(host) || allowed.includes(bare) ? host : fallback;
 }
 
 function sendError(res, statusCode, code, description) {
@@ -87,7 +134,19 @@ function handler(req, res) {
     return sendError(res, 404, "not_found", "The API route was not found.");
   }
 
-  if (!isAllowedApiPath(incoming.pathname)) {
+  const method = (req.method || "GET").toUpperCase();
+  if (!ALLOWED_METHODS.has(method)) {
+    return sendError(res, 405, "method_not_allowed", "The request method is not supported.");
+  }
+
+  // The allowlist must pass for the raw path and for its percent-decoded,
+  // dot-resolved form, so encoded traversal cannot widen the match.
+  const decodedPath = decodedPathname(incoming.pathname);
+  if (
+    decodedPath === null ||
+    !isAllowedApiPath(incoming.pathname) ||
+    !isAllowedApiPath(decodedPath)
+  ) {
     return sendError(res, 404, "not_found", "The API route was not found.");
   }
 
@@ -102,7 +161,7 @@ function handler(req, res) {
   // The Deplexo edge routes by its own hostname and rejects a foreign Host with
   // 403, so Host must be the upstream host. The public host travels in
   // X-Forwarded-Host so issuer-origin checks and cookie scope still work.
-  const publicHost = String(req.headers?.host || "identity.ace-base.cc");
+  const publicHost = resolvePublicHost(req.headers?.host);
   headers.host = target.host;
   headers["x-forwarded-host"] = publicHost;
   headers["x-forwarded-proto"] = "https";
@@ -110,7 +169,7 @@ function handler(req, res) {
 
   const upstream = https.request(
     target,
-    { method: req.method || "GET", headers, timeout: 8000 },
+    { method, headers, timeout: 8000 },
     (upstreamResponse) => {
       res.statusCode = upstreamResponse.statusCode || 502;
       for (const [name, value] of Object.entries(upstreamResponse.headers)) {
@@ -137,4 +196,6 @@ function handler(req, res) {
 }
 
 handler.parseUpstreamOrigin = parseUpstreamOrigin;
+handler.decodedPathname = decodedPathname;
+handler.resolvePublicHost = resolvePublicHost;
 module.exports = handler;

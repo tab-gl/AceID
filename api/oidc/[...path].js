@@ -42,6 +42,33 @@ const ALLOWED_PATH_PREFIXES = [
   "/login/",
 ];
 
+// Reasonable verbs for the OIDC provider endpoints. Anything else is refused
+// here instead of being smuggled to the backend.
+const ALLOWED_METHODS = new Set([
+  "GET",
+  "HEAD",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "OPTIONS",
+]);
+
+// The public host is echoed to the backend in X-Forwarded-Host, which the
+// provider trusts to build redirect URLs and email links. Never echo an
+// unvalidated Host header: that is host-header injection into every
+// authorization redirect and reset link the provider emits.
+function resolvePublicHost(rawHost) {
+  const allowed = String(process.env.ACEID_PUBLIC_HOSTS || "identity.ace-base.cc")
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+  const fallback = allowed[0] || "identity.ace-base.cc";
+  const host = String(rawHost || "").toLowerCase();
+  const bare = host.replace(/:\d+$/, "");
+  return allowed.includes(host) || allowed.includes(bare) ? host : fallback;
+}
+
 function parseUpstreamOrigin(value) {
   if (!value || !value.trim()) {
     return { error: "api_upstream_not_configured" };
@@ -66,6 +93,34 @@ function parseUpstreamOrigin(value) {
   }
 }
 
+function isAllowedOIDCPath(path) {
+  return (
+    ALLOWED_EXACT_PATHS.has(path) ||
+    ALLOWED_PATH_PREFIXES.some((prefix) => path.startsWith(prefix))
+  );
+}
+
+// Percent-decoding view of a mapped endpoint path, used to close encoded
+// traversal (/login/..%2f..%2fadmin) that the raw allowlist would pass but a
+// decoding upstream router would resolve to a different endpoint. The
+// allowlist must succeed on both the raw and the decoded form.
+function decodedOIDCPath(path) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    return null;
+  }
+  if (decoded.includes("\\") || decoded.includes("\0") || decoded.includes("?") || decoded.includes("#")) {
+    return null;
+  }
+  try {
+    return new URL(decoded, "https://identity.invalid").pathname;
+  } catch {
+    return null;
+  }
+}
+
 function mapOIDCPath(requestUrl) {
   let parsed;
   try {
@@ -84,11 +139,15 @@ function mapOIDCPath(requestUrl) {
   } else {
     path = parsed.pathname || "/";
   }
-  const allowed =
-    ALLOWED_EXACT_PATHS.has(path) ||
-    ALLOWED_PATH_PREFIXES.some((prefix) => path.startsWith(prefix));
 
-  if (!allowed || path.includes("\\") || path.includes("\0")) {
+  const decodedPath = decodedOIDCPath(path);
+  if (
+    decodedPath === null ||
+    !isAllowedOIDCPath(path) ||
+    !isAllowedOIDCPath(decodedPath) ||
+    path.includes("\\") ||
+    path.includes("\0")
+  ) {
     return { error: "not_found" };
   }
 
@@ -129,6 +188,17 @@ function sendError(res, statusCode, code, description, req) {
 }
 
 function handler(req, res) {
+  const method = (req.method || "GET").toUpperCase();
+  if (!ALLOWED_METHODS.has(method)) {
+    return sendError(
+      res,
+      405,
+      "method_not_allowed",
+      "The request method is not supported.",
+      req,
+    );
+  }
+
   const mapped = mapOIDCPath(req.url);
   if (mapped.error) {
     return sendError(
@@ -174,7 +244,7 @@ function handler(req, res) {
   // The edge in front of the backend routes by its own hostname, so Host must be
   // the upstream host. The public issuer host travels in X-Forwarded-Host, which
   // the provider uses (proxy trust) to build URLs.
-  const publicHost = String(req.headers?.host || "identity.ace-base.cc");
+  const publicHost = resolvePublicHost(req.headers?.host);
   headers.host = upstream.host;
   headers["x-forwarded-host"] = publicHost;
   headers["x-forwarded-proto"] = "https";
@@ -185,7 +255,7 @@ function handler(req, res) {
       protocol: "https:",
       hostname: upstream.hostname,
       port: upstream.port || 443,
-      method: req.method || "GET",
+      method,
       path: upstream.pathname + upstream.search,
       headers,
       timeout: 8000,
@@ -236,3 +306,4 @@ module.exports = handler;
 module.exports.handler = handler;
 module.exports.mapOIDCPath = mapOIDCPath;
 module.exports.parseUpstreamOrigin = parseUpstreamOrigin;
+module.exports.resolvePublicHost = resolvePublicHost;
