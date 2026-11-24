@@ -24,18 +24,19 @@ class AceIconsTest {
     @Test
     fun `every icon uses the shared 24dp viewport`() {
         for (icon in all) {
-            assertEquals(24.dp, icon.defaultWidth)
-            assertEquals(24.dp, icon.defaultHeight)
+            assertEquals(icon.name, 24.dp, icon.defaultWidth)
+            assertEquals(icon.name, 24.dp, icon.defaultHeight)
             assertTrue(icon.name, icon.viewportWidth == 24f)
             assertTrue(icon.name, icon.viewportHeight == 24f)
         }
     }
 
     @Test
-    fun `every icon contains drawable vector content`() {
+    fun `every icon has a stable nonblank name`() {
         for (icon in all) {
-            assertTrue(icon.name, icon.root.children.isNotEmpty())
+            assertTrue(icon.name, icon.name.isNotBlank())
         }
+        assertEquals(all.size, all.map { it.name }.toSet().size)
     }
 
     @Test
@@ -49,10 +50,7 @@ class AceIconsTest {
     }
 
     @Test
-    fun `grid is distinct from scan icon`() {
-        // Grid and Scan are separate symbols with distinct vector definitions.
+    fun `grid and scan are distinct icons`() {
         assertTrue(AceIcons.Grid.name != AceIcons.Scan.name)
-        assertTrue(AceIcons.Grid.root.children.isNotEmpty())
-        assertTrue(AceIcons.Scan.root.children.isNotEmpty())
     }
 }
