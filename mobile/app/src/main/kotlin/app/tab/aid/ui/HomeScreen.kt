@@ -2,8 +2,11 @@ package app.tab.aid.ui
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -35,8 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.unit.dp
 import app.tab.aid.auth.AceIdConfig
 import app.tab.aid.data.AceIdApi
@@ -146,45 +149,51 @@ fun HomeScreen(
 @Composable
 private fun FloatingNavigationBar(selected: Int, onSelect: (Int) -> Unit) {
     val colors = LocalAceColors.current
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-            .background(colors.background)
-            .border(1.dp, colors.border)
-            .padding(6.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        color = colors.panel,
+        shape = RoundedCornerShape(28.dp),
+        shadowElevation = 12.dp,
+        border = BorderStroke(1.dp, colors.border),
     ) {
-        Tab.entries.forEachIndexed { index, tab ->
-            val active = index == selected
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(if (active) colors.content else Color.Transparent)
-                    .clickable(
-                        role = androidx.compose.ui.semantics.Role.Tab,
-                        onClickLabel = tab.label,
-                        onClick = { onSelect(index) },
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(6.dp)
+                .selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Tab.entries.forEachIndexed { index, tab ->
+                val active = index == selected
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(if (active) colors.content else Color.Transparent)
+                        .selectable(
+                            selected = active,
+                            role = Role.Tab,
+                            onClick = { onSelect(index) },
+                        )
+                        .padding(vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(
+                        imageVector = tab.icon,
+                        contentDescription = null,
+                        tint = if (active) colors.background else colors.muted,
+                        modifier = Modifier.size(19.dp),
                     )
-                    .semantics {
-                        selected = active
-                    }
-                    .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Icon(
-                    imageVector = tab.icon,
-                    contentDescription = tab.label,
-                    tint = if (active) colors.background else colors.muted,
-                    modifier = Modifier.size(19.dp),
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = tab.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (active) colors.background else colors.muted,
-                )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = tab.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (active) colors.background else colors.muted,
+                    )
+                }
             }
         }
     }

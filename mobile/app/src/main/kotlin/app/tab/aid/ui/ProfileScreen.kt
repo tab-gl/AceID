@@ -233,12 +233,20 @@ private fun EditProfileSheet(
     onSave: (JSONObject) -> Unit,
 ) {
     val colors = LocalAceColors.current
-    // Keyed on the loaded account so fields refresh if it arrives after the
-    // sheet is first composed (e.g. a slow first load).
-    var displayName by remember(account) { mutableStateOf(account?.optString("display_name") ?: fallbackName) }
-    var username by remember(account) { mutableStateOf(account?.optString("username").orEmpty()) }
-    var email by remember(account) { mutableStateOf(account?.optString("email") ?: fallbackEmail) }
-    var avatarUrl by remember(account) { mutableStateOf(account?.optString("avatar_url").orEmpty()) }
+    // Keep the API's snake_case field names and compare against the loaded
+    // values so unchanged fields (especially username/email) are never resent.
+    val originalDisplayName = account?.optString("display_name")?.takeIf { it.isNotBlank() } ?: fallbackName
+    val originalUsername = account?.optString("username").orEmpty()
+    val originalEmail = account?.optString("email")?.takeIf { it.isNotBlank() } ?: fallbackEmail
+    val originalAvatarUrl = account?.optString("avatar_url").orEmpty()
+    var displayName by remember(account) { mutableStateOf(originalDisplayName) }
+    var username by remember(account) { mutableStateOf(originalUsername) }
+    var email by remember(account) { mutableStateOf(originalEmail) }
+    var avatarUrl by remember(account) { mutableStateOf(originalAvatarUrl) }
+    val hasChanges = displayName.trim() != originalDisplayName.trim() ||
+        username.trim() != originalUsername.trim() ||
+        email.trim() != originalEmail.trim() ||
+        avatarUrl.trim() != originalAvatarUrl.trim()
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -260,15 +268,22 @@ private fun EditProfileSheet(
             Spacer(Modifier.height(20.dp))
             Button(
                 onClick = {
-                    onSave(
-                        JSONObject()
-                            .put("displayName", displayName.trim())
-                            .put("username", username.trim())
-                            .put("email", email.trim())
-                            .put("avatarUrl", avatarUrl.trim()),
-                    )
+                    val values = JSONObject()
+                    if (displayName.trim() != originalDisplayName.trim()) {
+                        values.put("display_name", displayName.trim())
+                    }
+                    if (username.trim() != originalUsername.trim()) {
+                        values.put("username", username.trim())
+                    }
+                    if (email.trim() != originalEmail.trim()) {
+                        values.put("email", email.trim())
+                    }
+                    if (avatarUrl.trim() != originalAvatarUrl.trim()) {
+                        values.put("avatar_url", avatarUrl.trim())
+                    }
+                    onSave(values)
                 },
-                enabled = !saving,
+                enabled = !saving && hasChanges,
                 modifier = Modifier.fillMaxWidth(),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp),
                 colors = ButtonDefaults.buttonColors(

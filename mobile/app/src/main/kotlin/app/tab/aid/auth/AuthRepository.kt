@@ -266,7 +266,8 @@ class AuthRepository(
             ?: (System.currentTimeMillis() + DEFAULT_TOKEN_LIFETIME_MILLIS)
         // A refresh response often omits the ID token. Keep the stored profile
         // in that case instead of wiping it (which would end the session).
-        val profile = Jwt.profileFrom(response.idToken, expiresAt) ?: session.profile()
+        val profile = Jwt.profileFrom(response.idToken, expiresAt)
+            ?: session.profile()?.copy(expiresAtEpochMillis = expiresAt)
         session.saveSession(
             accessToken = accessToken,
             refreshToken = response.refreshToken,

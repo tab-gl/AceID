@@ -6,6 +6,7 @@ import app.tab.aid.data.AceIdApi
 import app.tab.aid.data.activityLogs
 import app.tab.aid.data.optObjects
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,19 +25,21 @@ data class OverviewUiState(
 class OverviewViewModel(private val api: AceIdApi) : ViewModel() {
     private val _state = MutableStateFlow(OverviewUiState())
     val state: StateFlow<OverviewUiState> = _state.asStateFlow()
+    private var refreshJob: Job? = null
 
     init {
         refresh()
     }
 
     fun refresh() {
+        refreshJob?.cancel()
         val current = _state.value
         _state.value = current.copy(
             loading = current.account == null,
             refreshing = current.account != null,
             error = null,
         )
-        viewModelScope.launch {
+        refreshJob = viewModelScope.launch {
             try {
                 val account = api.account()
                 _state.value = OverviewUiState(
@@ -69,16 +72,18 @@ data class SecurityUiState(
 class SecurityViewModel(private val api: AceIdApi) : ViewModel() {
     private val _state = MutableStateFlow(SecurityUiState())
     val state: StateFlow<SecurityUiState> = _state.asStateFlow()
+    private var refreshJob: Job? = null
 
     init {
         refresh()
     }
 
     fun refresh() {
+        refreshJob?.cancel()
         val current = _state.value
         val firstLoad = current.devices.isEmpty() && current.logs.isEmpty()
         _state.value = current.copy(loading = firstLoad, refreshing = !firstLoad, error = null)
-        viewModelScope.launch {
+        refreshJob = viewModelScope.launch {
             // Fetch in parallel so one slow endpoint does not block the other,
             // and keep whichever half succeeded instead of discarding both.
             val (devicesResult, logsResult) = coroutineScope {
@@ -121,19 +126,21 @@ data class ConnectedAppsUiState(
 class ConnectedAppsViewModel(private val api: AceIdApi) : ViewModel() {
     private val _state = MutableStateFlow(ConnectedAppsUiState())
     val state: StateFlow<ConnectedAppsUiState> = _state.asStateFlow()
+    private var refreshJob: Job? = null
 
     init {
         refresh()
     }
 
     fun refresh() {
+        refreshJob?.cancel()
         val current = _state.value
         _state.value = current.copy(
             loading = current.apps.isEmpty(),
             refreshing = current.apps.isNotEmpty(),
             error = null,
         )
-        viewModelScope.launch {
+        refreshJob = viewModelScope.launch {
             try {
                 val apps = api.connectedApps().optObjects("connectedApps")
                 _state.value = ConnectedAppsUiState(
@@ -184,19 +191,21 @@ data class ProfileUiState(
 class ProfileViewModel(private val api: AceIdApi) : ViewModel() {
     private val _state = MutableStateFlow(ProfileUiState())
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
+    private var refreshJob: Job? = null
 
     init {
         refresh()
     }
 
     fun refresh() {
+        refreshJob?.cancel()
         val current = _state.value
         _state.value = current.copy(
             loading = current.account == null,
             refreshing = current.account != null,
             error = null,
         )
-        viewModelScope.launch {
+        refreshJob = viewModelScope.launch {
             try {
                 val account = api.account()
                 _state.value = ProfileUiState(

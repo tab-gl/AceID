@@ -28,6 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import app.tab.aid.auth.AceIdConfig
 import app.tab.aid.ui.components.AceIcons
 import app.tab.aid.ui.components.Brand
@@ -133,6 +136,7 @@ fun SignInScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(1.dp, colors.border)
+                    .semantics { liveRegion = LiveRegionMode.Polite }
                     .padding(14.dp),
             ) {
                 Text(error, style = MaterialTheme.typography.bodySmall, color = colors.content)

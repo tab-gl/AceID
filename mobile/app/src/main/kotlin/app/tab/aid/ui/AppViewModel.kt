@@ -91,6 +91,12 @@ class AppViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    override fun onCleared() {
+        container.authRepository.dispose()
+        screenScope.viewModelStore.clear()
+        super.onCleared()
+    }
+
     fun signOut() {
         viewModelScope.launch {
             container.authRepository.signOut()
