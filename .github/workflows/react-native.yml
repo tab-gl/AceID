@@ -1,0 +1,41 @@
+name: React Native client
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "mobile-rn/**"
+      - ".github/workflows/react-native.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "mobile-rn/**"
+      - ".github/workflows/react-native.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-rn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile-rn/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm test
+      - name: Web bundle
+        run: npx expo export --platform web --output-dir /tmp/web-export
+      - name: Android bundle
+        run: npx expo export --platform android --output-dir /tmp/android-export
