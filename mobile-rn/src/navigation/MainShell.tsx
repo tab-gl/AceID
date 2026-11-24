@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BackHandler, LayoutChangeEvent, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -38,6 +38,17 @@ const TABS: { key: string; label: string; icon: IconName; Screen: React.Componen
 ];
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+/**
+ * Where a swipe lands. `page` is the position at release; a fast flick projects
+ * further (a quarter of the flick's distance per unit velocity), so short flicks
+ * still change tab. Pure, so it is unit tested.
+ */
+export function swipeTarget(page: number, velocityX: number, width: number, count: number): number {
+  if (width <= 0) return clamp(Math.round(page), 0, count - 1);
+  const projected = page - (velocityX / width) * 0.25;
+  return clamp(Math.round(projected), 0, count - 1);
+}
 const BAR_INSET = 14;
 const BAR_HEIGHT = 64;
 const PILL_PADDING = 5;
@@ -78,21 +89,26 @@ export function MainShell() {
     return () => sub.remove();
   }, [active, goTo]);
 
-  const pan = Gesture.Pan()
-    .activeOffsetX([-12, 12])
-    .failOffsetY([-16, 16])
-    .onBegin(() => {
-      dragStart.value = page.value;
-    })
-    .onUpdate((event) => {
-      page.value = clamp(dragStart.value - event.translationX / width, -0.12, TABS.length - 0.88);
-    })
-    .onEnd((event) => {
-      const projected = page.value - event.velocityX / width * 0.25;
-      const target = clamp(Math.round(projected), 0, TABS.length - 1);
-      page.value = withSpring(target, springFor('default-spatial'));
-      runOnJS(goTo)(target);
-    });
+  // One swipe recogniser, attached to the pages and to the tab bar. Horizontal
+  // drags only, so vertical scrolling inside a page is not affected.
+  const [pageSwipe, barSwipe] = useMemo(() => {
+    const build = () =>
+      Gesture.Pan()
+        .activeOffsetX([-12, 12])
+        .failOffsetY([-16, 16])
+        .onBegin(() => {
+          dragStart.value = page.value;
+        })
+        .onUpdate((event) => {
+          page.value = clamp(dragStart.value - event.translationX / width, -0.12, TABS.length - 0.88);
+        })
+        .onEnd((event) => {
+          const target = swipeTarget(page.value, event.velocityX, width, TABS.length);
+          page.value = withSpring(target, springFor('default-spatial'));
+          runOnJS(goTo)(target);
+        });
+    return [build(), build()];
+  }, [width, page, dragStart, goTo]);
 
   const itemWidth = barWidth > 0 ? (barWidth - PILL_PADDING * 2) / TABS.length : 0;
   const pillStyle = useAnimatedStyle(() => ({
@@ -104,7 +120,7 @@ export function MainShell() {
     <View style={styles.flex}>
       {/* The pages are the backdrop the tab bar blurs. The bar must stay a sibling. */}
       <BlurTarget style={styles.flex}>
-        <GestureDetector gesture={pan}>
+        <GestureDetector gesture={pageSwipe}>
           <View style={styles.flex}>
             {TABS.map((tab, index) => (
               <PageSlot key={tab.key} index={index} page={page} width={width}>
@@ -130,6 +146,8 @@ export function MainShell() {
         contentStyle={styles.barContent}
         accessibilityRole="tablist"
       >
+        <GestureDetector gesture={barSwipe}>
+          <View style={styles.barContent}>
         {itemWidth > 0 ? (
           <Animated.View
             pointerEvents="none"
@@ -154,6 +172,8 @@ export function MainShell() {
             }}
           />
         ))}
+          </View>
+        </GestureDetector>
       </GlassSurface>
     </View>
   );
@@ -205,6 +225,11 @@ function TabItem({
     const closeness = clamp(1 - Math.abs(index - page.value), 0, 1);
     return { transform: [{ scale: 1 + 0.12 * closeness }, { translateY: -1.5 * closeness }] };
   });
+  // The label fades in as its pill passes over the tab, so the active tab always shows its name.
+  const labelStyle = useAnimatedStyle(() => {
+    const closeness = clamp(1 - Math.abs(index - page.value), 0, 1);
+    return { opacity: closeness, transform: [{ translateY: (1 - closeness) * 3 }] };
+  });
   return (
     <Pressable
       accessibilityRole="tab"
@@ -217,13 +242,16 @@ function TabItem({
       <Animated.View style={iconStyle}>
         <Icon name={icon} size={22} active={active} strokeWidth={1.6} color={active ? colors.inverseContent : colors.muted} />
       </Animated.View>
-      <AppText
-        variant="eyebrow"
-        style={[styles.label, { fontFamily: active ? FONT.extrabold : FONT.bold }]}
-        color={active ? colors.inverseContent : colors.muted}
-      >
-        {label}
-      </AppText>
+      <Animated.View style={labelStyle}>
+        <AppText
+          variant="label"
+          numberOfLines={1}
+          style={[styles.label, { fontFamily: active ? FONT.extrabold : FONT.bold }]}
+          color={active ? colors.inverseContent : colors.muted}
+        >
+          {label}
+        </AppText>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -242,7 +270,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: PILL_PADDING,
   },
   pill: { position: 'absolute', borderRadius: SHAPE.full },
-  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, height: BAR_HEIGHT - PILL_PADDING * 2 },
-  label: { fontSize: 10, letterSpacing: 0.4, textTransform: 'none' },
+  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 1, height: BAR_HEIGHT - PILL_PADDING * 2 },
+  label: { fontSize: 12, lineHeight: 15, letterSpacing: 0.2, textTransform: 'none' },
 });
 

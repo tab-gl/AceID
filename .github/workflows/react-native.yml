@@ -66,6 +66,24 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - run: npm ci
+      - name: Prepare release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not set. Release APKs will use the debug key (not for distribution)."
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          {
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS"
+            echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
       - name: Build release APKs
         working-directory: mobile-rn/android
         run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon

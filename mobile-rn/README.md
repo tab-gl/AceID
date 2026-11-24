@@ -99,6 +99,40 @@ Icons: Solar (`@solar-icons/react-native`).
 - `glisse` is web-only (`window`, `document`, SVG filters) and cannot run in React
   Native. `glissle` is not on npm. Neither is used.
 
+## Release signing (GitHub secrets)
+
+The `android` job in `.github/workflows/react-native.yml` signs release APKs with
+a release keystore when these repository secrets are set
+(Settings → Secrets and variables → Actions → New repository secret):
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | The keystore file, base64-encoded (one line, see below) |
+| `ANDROID_KEYSTORE_PASSWORD` | The keystore password |
+| `ANDROID_KEY_ALIAS` | The key alias inside the keystore |
+| `ANDROID_KEY_PASSWORD` | The key password |
+
+Create the keystore once, on a machine you control:
+
+```sh
+keytool -genkeypair -v -keystore aceid-release.jks -alias aceid \
+  -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 aceid-release.jks > aceid-release.jks.b64   # macOS: base64 -i aceid-release.jks | tr -d '\n'
+```
+
+Paste the contents of `aceid-release.jks.b64` into `ANDROID_KEYSTORE_BASE64`. Use `aceid`
+as `ANDROID_KEY_ALIAS`. Store the `.jks` file and both passwords in a password manager. If
+the keystore is lost, installed copies cannot be updated in place, so keep a backup.
+
+Never commit the `.jks` file, the `.b64` file, or the passwords. The `debug.keystore`
+in `android/app` is for local debug builds only.
+
+- Without the secrets, the workflow still builds release APKs, signed with the debug key,
+  and prints a warning. Those APKs are for testing only.
+- The iOS job builds an **unsigned** IPA. Signing it needs an Apple Developer account
+  and secrets for a certificate, provisioning profile, and team ID. Those are not
+  configured yet.
+
 ## Native status (honest)
 
 | Item | State |
