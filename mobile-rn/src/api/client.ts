@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { isLoopbackOrHttps } from '@/auth/oidc';
-import { AUTH_CONFIG } from '@/auth/config';
+import { isLoopbackOrHttps } from '@/auth/url';
+import { AUTH_CONFIG } from '@/config';
 import { ApiError, API_MESSAGES, apiMessageFor } from './errors';
 import { isObject, type JsonObject } from './json';
 
@@ -48,9 +48,9 @@ async function writeCache(path: string, data: JsonObject, etag: string | null) {
 }
 
 export async function clearApiCache() {
-  const keys = await AsyncStorage.getAllKeys().catch(() => [] as readonly string[]);
+  const keys = await AsyncStorage.getAllKeys().catch(() => [] as string[]);
   const own = keys.filter((key) => key.startsWith(CACHE_PREFIX));
-  if (own.length > 0) await AsyncStorage.multiRemove(own).catch(() => undefined);
+  await Promise.all(own.map((key) => AsyncStorage.removeItem(key).catch(() => undefined)));
 }
 
 function parseObject(payload: string): { value: JsonObject; isObject: boolean } {

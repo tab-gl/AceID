@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
 import { errorMessage } from './errors';
 
 export interface LoaderState<T> {
@@ -7,16 +6,17 @@ export interface LoaderState<T> {
   error: string | null;
   /** First load with nothing to show yet. */
   loading: boolean;
-  /** Pull-to-refresh while data is already on screen. */
+  /** Pull-to-refresh or background reload while data is already on screen. */
   refreshing: boolean;
   reload: () => void;
 }
 
 /**
- * Loads a resource when the screen gains focus and keeps the last good data
- * on screen while refreshing. Stale responses from an earlier call are dropped.
+ * Loads a resource once the screen is enabled (for example, once its tab has
+ * been visited) and keeps the last good data on screen while refreshing. A
+ * response from an earlier request is dropped if a newer one has started.
  */
-export function useLoader<T>(load: () => Promise<T>, fallbackError: string): LoaderState<T> {
+export function useLoader<T>(load: () => Promise<T>, fallbackError: string, enabled = true): LoaderState<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,15 +50,20 @@ export function useLoader<T>(load: () => Promise<T>, fallbackError: string): Loa
       });
   }, [fallbackError]);
 
-  useFocusEffect(
-    useCallback(() => {
-      reload();
-    }, [reload]),
-  );
+  // Loads on first enable, then quietly refreshes each time the screen becomes
+  // enabled again (for example, when its tab is revisited).
+  const wasEnabled = useRef(false);
+  useEffect(() => {
+    if (enabled && !wasEnabled.current) reload();
+    wasEnabled.current = enabled;
+  }, [enabled, reload]);
 
-  useEffect(() => () => {
-    requestId.current++;
-  }, []);
+  useEffect(
+    () => () => {
+      requestId.current++;
+    },
+    [],
+  );
 
   return { data, error, loading, refreshing, reload };
 }

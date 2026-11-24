@@ -1,11 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AceIdApi, clearApiCache } from '@/api/client';
 import { ApiError, API_MESSAGES, AuthError } from '@/api/errors';
-import { isRefreshRejected, endProviderSession, refreshWithToken, revokeToken, signInWithBrowser } from './oidc';
+import { endProviderSession, isRefreshRejected, refreshWithToken, revokeToken, signInWithBrowser, type TokenSet } from './oidc';
 import { profileFromIdToken, type IdentityProfile } from './jwt';
 import { clearSession, loadSession, saveSession, type StoredSession } from './tokenStore';
 
-/** Refresh this long before expiry, so a request never races the clock. */
+/** Refresh this long before expiry so a request never races the clock. */
 const EXPIRY_SKEW_MS = 60_000;
 
 export type SessionStatus = 'loading' | 'signedOut' | 'signedIn';
@@ -23,14 +23,12 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | null>(null);
 
-function toStored(tokens: { accessToken?: string; refreshToken?: string; idToken?: string; expiresIn?: number; issuedAt?: number }): StoredSession {
-  const issuedAt = tokens.issuedAt ?? Math.floor(Date.now() / 1000);
-  const lifetime = tokens.expiresIn ?? 0;
+function toStored(tokens: TokenSet): StoredSession {
   return {
-    accessToken: tokens.accessToken ?? null,
-    refreshToken: tokens.refreshToken ?? null,
-    idToken: tokens.idToken ?? null,
-    expiresAt: (issuedAt + lifetime) * 1000,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    idToken: tokens.idToken,
+    expiresAt: tokens.expiresAt,
   };
 }
 
@@ -55,13 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!current?.refreshToken) return null;
     try {
       const tokens = await refreshWithToken(current.refreshToken);
-      const next = toStored({
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken ?? current.refreshToken,
-        idToken: tokens.idToken ?? current.idToken ?? undefined,
-        expiresIn: tokens.expiresIn,
-        issuedAt: tokens.issuedAt,
-      });
+      const next = toStored(tokens);
       session.current = next;
       await saveSession(next);
       return next.accessToken;
@@ -119,13 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async () => {
     const tokens = await signInWithBrowser();
-    const next = toStored({
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      idToken: tokens.idToken,
-      expiresIn: tokens.expiresIn,
-      issuedAt: tokens.issuedAt,
-    });
+    const next = toStored(tokens);
     const identity = profileFromIdToken(next.idToken, next.expiresAt);
     if (!identity) {
       throw new AuthError('The identity provider returned an invalid ID token. Check the issuer and OIDC client configuration.');
@@ -139,10 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     const current = session.current;
     // Revoke first so a copy of either token stops working now. Best effort.
-    if (current?.refreshToken) await revokeToken(current.refreshToken, 'refresh_token').catch(() => undefined);
-    if (current?.accessToken) await revokeToken(current.accessToken, 'access_token').catch(() => undefined);
+    if (current?.refreshToken) await revokeToken(current.refreshToken).catch(() => undefined);
+    if (current?.accessToken) await revokeToken(current.accessToken).catch(() => undefined);
     if (current?.idToken) {
-      // Not awaited: the system browser stays open until the person closes it.
+      // Not awaited: the browser stays open until the person closes it.
       endProviderSession(current.idToken).catch(() => undefined);
     }
     await endSession();
@@ -155,7 +141,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     tokenSource.current = getAccessToken;
   }, [getAccessToken]);
   // The arrow only runs later, from an event or request, never during render.
-  // eslint-disable-next-line react-hooks/refs
   const accountApi = useMemo(() => new AceIdApi(() => tokenSource.current()), []);
 
   const value = useMemo<AuthValue>(

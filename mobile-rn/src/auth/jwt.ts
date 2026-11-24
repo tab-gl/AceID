@@ -19,11 +19,11 @@ export function decodeBase64Url(input: string): string {
     if (char === '=') break;
     const index = B64.indexOf(char);
     if (index < 0) throw new Error('invalid base64');
-    bits = (bits << 6) | index;
+    bits = (bits * 64 + index) % 1048576;
     bitCount += 6;
     if (bitCount >= 8) {
       bitCount -= 8;
-      bytes.push((bits >> bitCount) & 0xff);
+      bytes.push(Math.floor(bits / 2 ** bitCount) % 256);
     }
   }
   let out = '';

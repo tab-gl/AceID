@@ -1,12 +1,13 @@
 import { activityLogs, firstText, objects, shortDate, strings } from '@/api/json';
 import { apiMessageFor, authMessageFor } from '@/api/errors';
 import { decodeBase64Url, profileFromIdToken } from '@/auth/jwt';
-import { isLoopbackOrHttps, isRefreshRejected } from '@/auth/oidc';
+import { isRefreshRejected } from '@/auth/oidc';
+import { isLoopbackOrHttps } from '@/auth/url';
 import { springFor } from '@/theme/tokens';
 import { M3E_SPRINGS } from '@/theme/m3e-motion.generated';
 
 const b64url = (value: string) =>
-  Buffer.from(value, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  Buffer.from(value, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/[=]+$/, '');
 
 describe('json readers', () => {
   it('firstText skips blank and "null" values', () => {

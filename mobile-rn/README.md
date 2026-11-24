@@ -1,74 +1,97 @@
-# Ace ID for React Native
+This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
-The React Native (Expo) client for **Ace ID by The Ace Base**. It is a rebuild of the
-Android client (`mobile/`) with the same screens, OIDC sign-in, account API behaviour
-and offline cache, on one codebase for iOS, Android and the web preview.
+# Getting Started
 
-## What it does
+> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
-| Area | Behaviour |
-| --- | --- |
-| Sign-in | OIDC authorization code + PKCE (S256) through the system browser. Discovery is pinned to the configured issuer. |
-| Tokens | Stored in Keychain / Android Keystore (chunked, because ID tokens exceed the per-value limit). Refreshed 60 s before expiry; only a provider rejection (`invalid_grant`, `invalid_client`, `unauthorized_client`) ends the session. |
-| Sign-out | Revokes refresh and access tokens (RFC 7009), opens RP-initiated logout, then clears local state and the cache. |
-| Home | Profile summary, username, verification state, shortcuts. |
-| Security | Signed-in devices and recent activity, with partial-failure handling. |
-| Connected apps | List and disconnect apps, with a confirmation dialog. |
-| ID | Edit display name, username, email and avatar (only changed fields are sent). Links to the hosted security, devices and danger-zone pages. |
-| Cache | ETag/304 revalidation, 7-day expiry, served when offline. Mutations clear it. Auth failures are never masked by cached data. |
+## Step 1: Start Metro
 
-## Design system
+First, you will need to run **Metro**, the JavaScript build tool for React Native.
 
-- **Palette:** monochrome Paper `#F5F5F2` / Ink `#111111` with hairline borders, and a dark variant. There is no accent colour.
-- **Typography:** Instrument Serif for display copy, Satoshi for UI copy (the same files as the Android client, in `assets/fonts`).
-- **Logo and icons:** the Ace ID lockup from the Android launcher artwork, and the 24dp outline icon set from `web-icons/` (generated from the Android `AceIcons`).
-- **Motion and shape:** the m3e Material 3 Expressive springs (generated from the published `@m3e/web` package by `npm run gen:m3e`) and the m3e shape scale. The floating tab bar uses a `default-spatial` expressive spring.
-
-### About `@m3e/web`
-
-`@m3e/web` is a Lit/DOM web-component library. It cannot be mounted inside React Native,
-so this app consumes its published **design tokens** (spring stiffness and damping ratios, and
-the shape scale), and implements the matching components natively with
-Reanimated and react-native-svg. A web-only build could use the components directly.
-
-## Configuration
-
-Copy `.env.example` to `.env` (untracked) and set public values only. Client secrets never belong here.
-
-| Variable | Default |
-| --- | --- |
-| `EXPO_PUBLIC_ACEID_ISSUER` | `https://identity.ace-base.cc` |
-| `EXPO_PUBLIC_ACEID_API_BASE_URL` | the issuer |
-| `EXPO_PUBLIC_ACEID_CLIENT_ID` | empty. Sign-in shows a configuration error until it is set. |
-
-The redirect URI is `app.tab.aid:/oauth2redirect` (the `scheme` in `app.json`), the same as the Android client.
-
-## Develop
+To start the Metro dev server, run the following command from the root of your React Native project:
 
 ```sh
-cd mobile-rn
-npm install
-npm start            # Expo dev server (press a, i, or w)
-npm run typecheck
-npm run lint
-npm test             # Jest: API client, cache, origin guard, JWT, error copy, motion tokens
-npx expo export --platform web      # production web bundle
-npx expo export --platform android  # production Android bundle
+# Using npm
+npm start
+
+# OR using Yarn
+yarn start
 ```
 
-Sign-in uses a custom URL scheme, so it needs a development build (`npx expo run:android` or
-`eas build --profile development`), not Expo Go. The web preview renders the signed-out and
-layout screens. Token storage on web falls back to AsyncStorage and is not a supported place for real tokens.
+## Step 2: Build and run your app
 
-## Layout
+With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
 
-| Path | Responsibility |
-| --- | --- |
-| `src/app/` | Expo Router routes. `_layout.tsx` gates routes on session state; `(tabs)/` holds the four signed-in screens. |
-| `src/auth/` | Config, OIDC flow, token storage, session provider, JWT display claims. |
-| `src/api/` | Account API client, cache, error copy, tolerant JSON readers, the focus-aware loader hook. |
-| `src/components/` | Brand, floating tab bar, shared UI kit, sheet, dialog, toast. |
-| `src/theme/` | Palette, typography, shape, m3e motion (generated), theme provider. |
-| `src/icons/` | Generated icon and logo path data, and the icon component. |
-| `scripts/gen-m3e-motion.mjs` | Generates the motion tokens from `@m3e/web`. |
-| `src/__tests__/` | Unit tests for the logic that carries risk. |
+### Android
+
+```sh
+# Using npm
+npm run android
+
+# OR using Yarn
+yarn android
+```
+
+### iOS
+
+For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+
+The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+
+```sh
+bundle install
+```
+
+Then, and every time you update your native dependencies, run:
+
+```sh
+bundle exec pod install
+```
+
+For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+
+```sh
+# Using npm
+npm run ios
+
+# OR using Yarn
+yarn ios
+```
+
+If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+
+This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+
+## Step 3: Modify your app
+
+Now that you have successfully run the app, let's make changes!
+
+Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+
+When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+
+- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
+- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+
+## Congratulations! :tada:
+
+You've successfully run and modified your React Native App. :partying_face:
+
+### Now what?
+
+- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
+- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+
+# Troubleshooting
+
+If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+
+# Learn More
+
+To learn more about React Native, take a look at the following resources:
+
+- [React Native Website](https://reactnative.dev) - learn more about React Native.
+- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
+- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
+- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
+- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
