@@ -2,7 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AceIdApi, clearApiCache } from '@/api/client';
 import { ApiError, API_MESSAGES, AuthError } from '@/api/errors';
 import { endProviderSession, isRefreshRejected, refreshWithToken, revokeToken, signInWithBrowser, type TokenSet } from './oidc';
-import { profileFromIdToken, type IdentityProfile } from './jwt';
+import { idTokenClaimProblem, profileFromIdToken, type IdentityProfile } from './jwt';
+import { AUTH_CONFIG } from '@/config';
 import { clearSession, loadSession, saveSession, type StoredSession } from './tokenStore';
 
 /** Refresh this long before expiry so a request never races the clock. */
@@ -112,6 +113,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async () => {
     const tokens = await signInWithBrowser();
     const next = toStored(tokens);
+    const problem = idTokenClaimProblem(next.idToken, {
+      issuer: AUTH_CONFIG.issuer,
+      clientId: AUTH_CONFIG.clientId,
+      now: Date.now(),
+    });
+    if (problem) {
+      throw new AuthError('The identity provider returned an ID token that failed validation. Check the issuer and OIDC client configuration.');
+    }
     const identity = profileFromIdToken(next.idToken, next.expiresAt);
     if (!identity) {
       throw new AuthError('The identity provider returned an invalid ID token. Check the issuer and OIDC client configuration.');

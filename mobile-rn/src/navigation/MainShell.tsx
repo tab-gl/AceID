@@ -12,7 +12,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '@/icons/Icon';
-import { springFor, HAIRLINE, SHAPE, FONT } from '@/theme/tokens';
+import { springFor, SHAPE, FONT } from '@/theme/tokens';
+import { GlassSurface } from '@/ui/Glass';
 import { useTheme } from '@/theme/ThemeProvider';
 import { haptic } from '@/ui/haptics';
 import { AppText } from '@/ui/Text';
@@ -110,7 +111,7 @@ export function MainShell() {
         </View>
       </GestureDetector>
 
-      <View
+      <GlassSurface
         onLayout={(event: LayoutChangeEvent) => setBarWidth(event.nativeEvent.layout.width)}
         style={[
           styles.bar,
@@ -118,8 +119,6 @@ export function MainShell() {
             bottom: insets.bottom + 12,
             left: BAR_INSET + insets.left,
             right: BAR_INSET + insets.right,
-            backgroundColor: colors.panel,
-            borderColor: colors.border,
           },
         ]}
         accessibilityRole="tablist"
@@ -148,7 +147,7 @@ export function MainShell() {
             }}
           />
         ))}
-      </View>
+      </GlassSurface>
     </View>
   );
 }
@@ -228,15 +227,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     height: BAR_HEIGHT,
     borderRadius: SHAPE.full,
-    borderWidth: HAIRLINE,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: PILL_PADDING,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
   },
   pill: { position: 'absolute', borderRadius: SHAPE.full },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, height: BAR_HEIGHT - PILL_PADDING * 2 },

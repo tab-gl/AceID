@@ -1,6 +1,6 @@
 import { activityLogs, firstText, objects, shortDate, strings } from '@/api/json';
 import { apiMessageFor, authMessageFor } from '@/api/errors';
-import { decodeBase64Url, profileFromIdToken } from '@/auth/jwt';
+import { decodeBase64Url, idTokenClaimProblem, profileFromIdToken } from '@/auth/jwt';
 import { isRefreshRejected } from '@/auth/oidc';
 import { isLoopbackOrHttps } from '@/auth/url';
 import { springFor } from '@/theme/tokens';
@@ -86,5 +86,29 @@ describe('motion tokens', () => {
     expect(Object.keys(M3E_SPRINGS.expressive).sort()).toEqual(
       ['default-effects', 'default-spatial', 'fast-effects', 'fast-spatial', 'slow-effects', 'slow-spatial'],
     );
+  });
+});
+
+describe('idTokenClaimProblem', () => {
+  const enc = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/[=]+$/, '');
+  const now = 1_800_000_000_000;
+  const base = { sub: 'u1', iss: 'https://identity.ace-base.cc', aud: 'client-1', exp: now / 1000 + 600 };
+  const token = (claims: object) => `h.${enc(claims)}.s`;
+  const expect_ = { issuer: 'https://identity.ace-base.cc', clientId: 'client-1', now };
+
+  it('accepts a matching token', () => {
+    expect(idTokenClaimProblem(token(base), expect_)).toBeNull();
+  });
+  it('accepts an audience array that contains the client', () => {
+    expect(idTokenClaimProblem(token({ ...base, aud: ['other', 'client-1'], azp: 'client-1' }), expect_)).toBeNull();
+  });
+  it('rejects a wrong issuer, audience, expiry or missing subject', () => {
+    expect(idTokenClaimProblem(token({ ...base, iss: 'https://evil.example' }), expect_)).toBe('issuer mismatch');
+    expect(idTokenClaimProblem(token({ ...base, aud: 'someone-else' }), expect_)).toBe('audience mismatch');
+    expect(idTokenClaimProblem(token({ ...base, exp: now / 1000 - 1 }), expect_)).toBe('expired');
+    expect(idTokenClaimProblem(token({ ...base, sub: undefined }), expect_)).toBe('missing sub');
+  });
+  it('rejects every token while no client ID is configured', () => {
+    expect(idTokenClaimProblem(token(base), { ...expect_, clientId: '' })).toBe('audience mismatch');
   });
 });

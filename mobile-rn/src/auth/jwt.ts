@@ -65,3 +65,31 @@ export function profileFromIdToken(token: string | null | undefined, expiresAt: 
     expiresAt,
   };
 }
+
+export interface IdTokenExpectation {
+  issuer: string;
+  clientId: string;
+  now: number;
+}
+
+/**
+ * Checks the OIDC ID-token claims the client must enforce on a token it has
+ * just received from the token endpoint (OIDC Core 3.1.3.7): issuer, audience,
+ * expiry and subject. Returns a reason string on failure, or null when valid.
+ * Signature verification against the JWKS is not performed here (see README).
+ */
+export function idTokenClaimProblem(token: string | null | undefined, expect: IdTokenExpectation): string | null {
+  const parts = token?.split('.');
+  if (!parts || parts.length !== 3) return 'malformed';
+  const claims = idTokenClaims(token);
+  if (claim(claims, 'sub') === undefined) return 'missing sub';
+  const normalize = (value: string) => value.replace(/\/+$/, '');
+  if (claim(claims, 'iss') === undefined || normalize(claims.iss as string) !== normalize(expect.issuer)) return 'issuer mismatch';
+  const aud = claims.aud;
+  const audiences = typeof aud === 'string' ? [aud] : Array.isArray(aud) ? aud.filter((v): v is string => typeof v === 'string') : [];
+  if (!expect.clientId || !audiences.includes(expect.clientId)) return 'audience mismatch';
+  if (Array.isArray(aud) && aud.length > 1 && claims.azp !== expect.clientId) return 'azp mismatch';
+  const exp = claims.exp;
+  if (typeof exp !== 'number' || exp * 1000 <= expect.now) return 'expired';
+  return null;
+}

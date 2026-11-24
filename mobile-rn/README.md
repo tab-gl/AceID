@@ -1,97 +1,108 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# AceID (React Native)
 
-# Getting Started
+Native companion app for [Ace ID](https://identity.ace-base.cc), the OpenID Connect
+identity platform. Bare React Native 0.88 (no Expo). Package and OAuth redirect
+scheme: `app.tab.aid`.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+Source of truth for behaviour: the Ace ID identity service (`aceyash-dev/ace-id`,
+private) and the discovery document at
+`https://identity.ace-base.cc/.well-known/openid-configuration`. The in-repo
+`ARCHITECTURE.md` and the Kotlin client in `../mobile` document the same contract.
 
-## Step 1: Start Metro
+## Requirements
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- Node 20+, npm
+- Android: JDK 17, Android SDK 35
+- iOS: macOS, Xcode 16+, CocoaPods (`bundle install` then `bundle exec pod install`)
 
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
+## Commands
 
 ```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+npm install
+npm start                 # Metro
+npm run android           # or: npm run ios
+npm run typecheck         # tsc --noEmit
+npm run lint              # eslint
+npm test                  # jest (24+ tests)
+npm run gen:m3e           # regenerate src/theme/m3e-motion.generated.ts
 ```
 
-### iOS
+## Configuration
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+`src/config.ts` holds build-time constants. This is a **public** OIDC client: it
+has an issuer, an API origin, a client ID and a redirect URI, and never a secret.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+- `CLIENT_ID` is **empty**. Sign-in is disabled until a registered public mobile
+  client is provisioned, and the app says so instead of falling back to a web login.
+- The redirect URI is `app.tab.aid:/oauth2redirect`. It must be registered exactly.
+  Android reads the scheme from `appAuthRedirectScheme` in `android/app/build.gradle`;
+  iOS registers it in `ios/AceId/Info.plist` (`CFBundleURLTypes`).
 
-```sh
-bundle install
-```
+## Security model
 
-Then, and every time you update your native dependencies, run:
+- **Flow:** Authorization Code with PKCE (S256), via `react-native-app-auth`.
+  Scopes: `openid profile email offline_access`.
+- **State and PKCE:** `state` generation and verification and the code verifier are
+  handled inside AppAuth (AppAuth-Android and AppAuth-iOS). This app does not
+  reimplement them.
+- **Token storage:** access, refresh and ID tokens are in the platform secure store
+  (`react-native-keychain`: iOS Keychain, Android Keystore). AsyncStorage is never used
+  for tokens.
+- **ID-token checks** (`src/auth/jwt.ts`, `idTokenClaimProblem`): on sign-in the app
+  requires `sub`, `iss` equal to the configured issuer, `aud` containing the client ID
+  (and `azp` for multi-audience tokens), and an unexpired `exp`.
+  - **Not yet:** JWKS signature verification. Hermes has no suitable crypto for RS256.
+    The token is received directly from the token endpoint over TLS, which OIDC Core
+    3.1.3.7 permits. Adding JWKS verification is a follow-up.
+- **Refresh:** serialised. Only `invalid_grant`, `invalid_client` or
+  `unauthorized_client` end the session. Offline, timeouts and 5xx keep it.
+  Android and iOS both expose the OAuth error code through AppAuth.
+- **Sign-out:** revokes the refresh and access tokens (RFC 7009, best effort), opens
+  RP-initiated logout (`end_session_endpoint` with `id_token_hint`), then clears local
+  state and the response cache.
+- **Discovery:** the issuer in the discovery document must match the configured issuer.
+  Authorization and token endpoints must be HTTPS (loopback HTTP allowed for development).
 
-```sh
-bundle exec pod install
-```
+## Design
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+- Fonts: Figtree (UI) and Instrument Serif (display), linked on both platforms.
+- Palette: monochrome, matching the web (`#F5F5F2` / `#111111`, dark `#111111` / `#F5F5F1`).
+- Icons: Solar (`@solar-icons/react-native`).
+- Motion: M3E spring tokens generated from `@m3e/web`, Reanimated 4. Reduce-motion is respected.
+- Glass: `src/ui/Glass.tsx` is a native stand-in for the Liquid Glass look of the web
+  `glisse` library (see below).
 
-```sh
-# Using npm
-npm run ios
+### About `glisse` and `glissle`
 
-# OR using Yarn
-yarn ios
-```
+- `glissle` is not on npm (404). It was not used.
+- `glisse` (MIT, v0.6.0) is a browser-only React library. It touches `window`,
+  `document`, `getComputedStyle` and SVG displacement filters, and peers on
+  `react-dom`. It cannot be imported into React Native. Its look was recreated in
+  `src/ui/Glass.tsx` with `react-native-svg`.
+- The native glass does not blur what is behind it. A true backdrop blur needs a
+  native module, which was deliberately not added.
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## Native status (honest)
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+| Item | State |
+| --- | --- |
+| JS typecheck, lint, Jest | Passing (`npm run typecheck`, `npm run lint`, `npm test`) |
+| Android JS bundle | Builds (`react-native bundle --platform android`) |
+| iOS JS bundle | Builds (`react-native bundle --platform ios`) |
+| Android native build (Gradle) | **Not verified.** No Android SDK in the build environment |
+| iOS native build (pods, Xcode) | **Not verified.** Requires macOS |
+| AppAuth sign-in on a device | **Not verified.** Needs a provisioned client ID and a device |
+| iOS URL callback into AppAuth | **Unverified.** `SceneDelegate` forwards URLs to `RCTLinkingManager`. Confirm that AppAuth resumes the flow on a device |
+| Animation quality on a device | **Not reviewed** |
+| Visual parity with the website | Partial: palette, fonts and copy match. Not pixel-compared |
 
-## Step 3: Modify your app
+## Open items
 
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+1. Provision a public mobile OIDC client and set `CLIENT_ID`. Options for the identity
+   team: a registered client with `app.tab.aid:/oauth2redirect`, or a client ID metadata
+   document. The discovery document advertises `client_id_metadata_document_supported`.
+   Do not hand out a shared client secret.
+2. JWKS signature verification of ID tokens.
+3. Build and test on Android and iOS devices; confirm the browser round trip and
+   logout.
+4. Real-device motion review.
