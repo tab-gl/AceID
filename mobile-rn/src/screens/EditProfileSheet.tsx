@@ -4,7 +4,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { errorMessage } from '@/api/errors';
 import { saveProfile } from '@/api/queries';
 import type { JsonObject } from '@/api/json';
-import { SPACE } from '@/theme/tokens';
+import { SPACE } from '@/design-system/tokens';
 import { Button } from '@/ui/primitives';
 import { Sheet } from '@/ui/Sheet';
 import { TextField } from '@/ui/TextField';

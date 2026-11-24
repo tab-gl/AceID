@@ -1,23 +1,17 @@
-import React, { useEffect } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  StyleSheet,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, cancelAnimation, interpolate, Easing } from 'react-native-reanimated';
-import { useEnter, usePress, useShimmer } from '@/motion';
+import React, { useEffect, useState } from 'react';
+import { Image, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, cancelAnimation, Easing } from 'react-native-reanimated';
+import { useEnter, usePress } from '@/motion';
 import { useTheme } from '@/theme/ThemeProvider';
-import { FONT, HAIRLINE, SHAPE, SPACE, TYPE } from '@/theme/tokens';
+import { FONT, GLASS, HAIRLINE, SHAPE, SPACE, TYPE } from '@/design-system/tokens';
+import { GlassSurface } from '@/design-system/glass';
+import { LoadingBlock, LoadingIndicator } from '@/design-system/loading';
 import { AppText } from './Text';
 import { Icon, type IconName } from '@/icons/Icon';
 import { haptic } from './haptics';
 
-// Square surfaces with hairline borders, as on the web. The floating tab bar is
-// the one rounded element.
+// Every control and panel is Liquid Glass. Loading and progress states use the M3
+// Expressive indicators from the design system, never glass.
 
 export function Card({
   children,
@@ -32,18 +26,12 @@ export function Card({
   raised?: boolean;
   padding?: number;
 }) {
-  const { colors } = useTheme();
   const enter = useEnter(index ?? 0);
   return (
-    <Animated.View
-      style={[
-        styles.card,
-        { backgroundColor: raised ? colors.panelRaised : colors.panel, borderColor: colors.border, padding },
-        style,
-        enter,
-      ]}
-    >
-      {children}
+    <Animated.View style={[enter]}>
+      <GlassSurface tone={raised ? 'raised' : 'panel'} radius={GLASS.radius.card} contentStyle={[{ padding }, style]}>
+        {children}
+      </GlassSurface>
     </Animated.View>
   );
 }
@@ -80,52 +68,72 @@ export function Button({
 }) {
   const { colors } = useTheme();
   const press = usePress(0.96);
+  const [pressed, setPressed] = useState(false);
   const inactive = disabled || loading;
 
   const palette = {
-    primary: { bg: colors.inverse, fg: colors.inverseContent, border: colors.inverse },
-    secondary: { bg: colors.panel, fg: colors.content, border: colors.border },
-    ghost: { bg: 'transparent', fg: colors.content, border: 'transparent' },
-    danger: { bg: 'transparent', fg: colors.danger, border: colors.danger },
+    primary: { tone: 'inverse' as const, fg: colors.inverseContent },
+    secondary: { tone: 'panel' as const, fg: colors.content },
+    ghost: { tone: null, fg: colors.content },
+    danger: { tone: 'danger' as const, fg: colors.danger },
   }[variant];
 
   return (
     <Animated.View style={[press.style, fullWidth && styles.fullWidth]}>
+      {palette.tone ? (
+        <GlassSurface
+          tone={palette.tone}
+          blur={false}
+          interactive
+          pressed={pressed && !inactive}
+          radius={GLASS.radius.capsule}
+          style={[styles.button, disabled && styles.disabled, fullWidth && styles.fullWidth]}
+          contentStyle={styles.buttonContent}
+        >
+          <ButtonBody loading={loading} icon={icon} label={label} color={palette.fg} />
+        </GlassSurface>
+      ) : (
+        <View style={[styles.button, styles.buttonContent, disabled && styles.disabled, fullWidth && styles.fullWidth]}>
+          <ButtonBody loading={loading} icon={icon} label={label} color={palette.fg} />
+        </View>
+      )}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityHint={accessibilityHint}
         accessibilityState={{ disabled: inactive, busy: loading }}
         disabled={inactive}
-        onPressIn={press.pressIn}
-        onPressOut={press.pressOut}
+        onPressIn={() => {
+          setPressed(true);
+          press.pressIn();
+        }}
+        onPressOut={() => {
+          setPressed(false);
+          press.pressOut();
+        }}
         onPress={() => {
           haptic.tap();
           onPress();
         }}
-        style={[
-          styles.button,
-          { backgroundColor: palette.bg, borderColor: palette.border },
-          disabled && styles.disabled,
-          fullWidth && styles.fullWidth,
-        ]}
-      >
-        {loading ? (
-          <ActivityIndicator color={palette.fg} />
-        ) : (
-          <View style={styles.buttonInner}>
-            {icon ? <Icon name={icon} size={18} color={palette.fg} /> : null}
-            <AppText variant="label" color={palette.fg}>
-              {label}
-            </AppText>
-          </View>
-        )}
-      </Pressable>
+        style={StyleSheet.absoluteFill}
+      />
     </Animated.View>
   );
 }
 
-/** A quiet tappable row used for navigation lists and settings. */
+function ButtonBody({ loading, icon, label, color }: { loading: boolean; icon?: IconName; label: string; color: string }) {
+  if (loading) return <LoadingIndicator size={24} color={color} containerColor="transparent" />;
+  return (
+    <View style={styles.buttonInner}>
+      {icon ? <Icon name={icon} size={18} color={color} /> : null}
+      <AppText variant="label" color={color}>
+        {label}
+      </AppText>
+    </View>
+  );
+}
+
+/** A glass row for navigation lists and settings. */
 export function ActionRow({
   icon,
   title,
@@ -146,20 +154,11 @@ export function ActionRow({
   const { colors } = useTheme();
   const enter = useEnter(index ?? 0);
   const press = usePress(0.985);
+  const [pressed, setPressed] = useState(false);
   const tone = danger ? colors.danger : colors.content;
   return (
     <Animated.View style={[enter, press.style]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
-        onPressIn={press.pressIn}
-        onPressOut={press.pressOut}
-        onPress={() => {
-          haptic.select();
-          onPress();
-        }}
-        style={[styles.actionRow, { borderColor: colors.border, backgroundColor: colors.panel }]}
-      >
+      <GlassSurface radius={GLASS.radius.card} pressed={pressed} contentStyle={styles.actionRow}>
         <View style={[styles.iconTile, { borderColor: colors.border }]}>
           <Icon name={icon} size={20} color={tone} />
         </View>
@@ -174,7 +173,24 @@ export function ActionRow({
           ) : null}
         </View>
         {trailing ?? <Icon name="chevron" size={18} color={colors.muted} />}
-      </Pressable>
+      </GlassSurface>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
+        onPressIn={() => {
+          setPressed(true);
+          press.pressIn();
+        }}
+        onPressOut={() => {
+          setPressed(false);
+          press.pressOut();
+        }}
+        onPress={() => {
+          haptic.select();
+          onPress();
+        }}
+        style={StyleSheet.absoluteFill}
+      />
     </Animated.View>
   );
 }
@@ -208,30 +224,11 @@ export function Avatar({ name, url, size = 48 }: { name: string; url?: string; s
   );
 }
 
-export function Skeleton({ width, height = 14, radius = SHAPE.extraSmall }: { width: number | `${number}%`; height?: number; radius?: number }) {
-  const { colors } = useTheme();
-  const sweep = useShimmer();
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(sweep.value, [0, 1], [-160, 160]) }],
-  }));
-  return (
-    <View style={[styles.skeleton, { width, height, borderRadius: radius, backgroundColor: colors.border }]}>
-      <Animated.View style={[StyleSheet.absoluteFill, style]}>
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.panelRaised }, styles.shimmer]} />
-      </Animated.View>
-    </View>
-  );
-}
-
-export function SkeletonCard({ lines = 3 }: { lines?: number }) {
+/** A card that shows the M3 Expressive loading indicator while its data loads. */
+export function LoadingCard({ height = 120 }: { height?: number; lines?: number }) {
   return (
     <Card>
-      <View style={{ gap: SPACE.sm }}>
-        <Skeleton width="42%" height={18} />
-        {Array.from({ length: lines }).map((_, index) => (
-          <Skeleton key={index} width={index === lines - 1 ? '62%' : '100%'} />
-        ))}
-      </View>
+      <LoadingBlock height={height} />
     </Card>
   );
 }
@@ -240,14 +237,16 @@ export function EmptyState({ icon, title, message }: { icon: IconName; title: st
   const { colors } = useTheme();
   const enter = useEnter(0, { distance: 10 });
   return (
-    <Animated.View style={[styles.empty, { borderColor: colors.border }, enter]}>
-      <Icon name={icon} size={28} color={colors.muted} />
-      <AppText variant="titleMedium" align="center">
-        {title}
-      </AppText>
-      <AppText variant="bodySmall" color={colors.muted} align="center">
-        {message}
-      </AppText>
+    <Animated.View style={enter}>
+      <GlassSurface radius={GLASS.radius.card} contentStyle={styles.emptyContent}>
+        <Icon name={icon} size={28} color={colors.muted} />
+        <AppText variant="titleMedium" align="center">
+          {title}
+        </AppText>
+        <AppText variant="bodySmall" color={colors.muted} align="center">
+          {message}
+        </AppText>
+      </GlassSurface>
     </Animated.View>
   );
 }
@@ -256,14 +255,16 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
   const { colors } = useTheme();
   const enter = useEnter(0, { distance: 10 });
   return (
-    <Animated.View style={[styles.errorBox, { borderColor: colors.danger }, enter]} accessibilityRole="alert">
-      <View style={styles.errorRow}>
-        <Icon name="alert" size={20} color={colors.danger} />
-        <AppText variant="bodyMedium" color={colors.danger} style={styles.flex}>
-          {message}
-        </AppText>
-      </View>
-      <Button label="Try again" icon="refresh" variant="secondary" onPress={onRetry} />
+    <Animated.View style={enter} accessibilityRole="alert">
+      <GlassSurface tone="danger" radius={GLASS.radius.card} contentStyle={styles.errorContent}>
+        <View style={styles.errorRow}>
+          <Icon name="alert" size={20} color={colors.danger} />
+          <AppText variant="bodyMedium" color={colors.danger} style={styles.flex}>
+            {message}
+          </AppText>
+        </View>
+        <Button label="Try again" icon="refresh" variant="secondary" onPress={onRetry} />
+      </GlassSurface>
     </Animated.View>
   );
 }
@@ -314,31 +315,17 @@ export function PulseDot({ active, color }: { active: boolean; color: string }) 
 
 const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
-  shimmer: { opacity: 0.55 },
-  card: { borderWidth: HAIRLINE, borderRadius: SHAPE.extraSmall, overflow: 'hidden' },
-  button: {
-    minHeight: 50,
-    paddingHorizontal: SPACE.lg,
-    borderRadius: SHAPE.full,
-    borderWidth: HAIRLINE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  button: { minHeight: 50, borderRadius: SHAPE.full, overflow: 'hidden' },
+  buttonContent: { minHeight: 50, paddingHorizontal: SPACE.lg, alignItems: 'center', justifyContent: 'center' },
   buttonInner: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
   fullWidth: { alignSelf: 'stretch', width: '100%' },
   flex: { flex: 1 },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACE.md,
-    padding: SPACE.md,
-    borderWidth: HAIRLINE,
-    borderRadius: SHAPE.extraSmall,
-  },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, padding: SPACE.md },
   iconTile: {
     width: 40,
     height: 40,
     borderWidth: HAIRLINE,
+    borderRadius: SHAPE.medium,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -349,7 +336,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  skeleton: { overflow: 'hidden' },
   empty: {
     borderWidth: HAIRLINE,
     borderStyle: 'dashed',
@@ -357,7 +343,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACE.xs,
   },
-  errorBox: { borderWidth: HAIRLINE, padding: SPACE.md, gap: SPACE.md, borderRadius: SHAPE.extraSmall },
+  emptyContent: { padding: SPACE.xl, alignItems: 'center', gap: SPACE.xs },
+  errorContent: { padding: SPACE.md, gap: SPACE.md },
   errorRow: { flexDirection: 'row', gap: SPACE.sm, alignItems: 'flex-start' },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: SPACE.sm },
   pulseWrap: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },

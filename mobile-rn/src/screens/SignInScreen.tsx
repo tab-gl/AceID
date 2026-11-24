@@ -7,7 +7,7 @@ import { errorMessage } from '@/api/errors';
 import { webUrl, WEB } from '@/config';
 import { useBreathe, useEnter, useReduceMotion } from '@/motion';
 import { useTheme } from '@/theme/ThemeProvider';
-import { FONT, HAIRLINE, SPACE, springFor } from '@/theme/tokens';
+import { FONT, HAIRLINE, SPACE, springFor } from '@/design-system/tokens';
 import { Logo } from '@/ui/Logo';
 import { AppText } from '@/ui/Text';
 import { Button, Eyebrow, Rule } from '@/ui/primitives';

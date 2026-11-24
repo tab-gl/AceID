@@ -3,7 +3,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring } fro
 import Svg, { Path } from 'react-native-svg';
 import { LOGO_PATH } from '@/icons/logo-path';
 import { useReduceMotion } from '@/motion';
-import { springFor } from '@/theme/tokens';
+import { springFor } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 
 // The logo path is the full lockup (fingerprint mark over the wordmark) on a

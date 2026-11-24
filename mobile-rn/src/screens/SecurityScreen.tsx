@@ -5,10 +5,10 @@ import { webUrl, WEB } from '@/config';
 import { fetchSecurity, type Device } from '@/api/queries';
 import { shortDate } from '@/api/json';
 import { useLoader } from '@/api/useLoader';
-import { SPACE } from '@/theme/tokens';
+import { SPACE } from '@/design-system/tokens';
 import type { ScreenProps } from '@/navigation/MainShell';
 import { DataRow } from '@/ui/DataRow';
-import { Button, EmptyState, ErrorState, SectionHeader, SkeletonCard } from '@/ui/primitives';
+import { Button, EmptyState, ErrorState, SectionHeader, LoadingCard } from '@/ui/primitives';
 import { PageScroll } from '@/ui/PageScroll';
 import { useToast } from '@/ui/Toast';
 
@@ -31,7 +31,7 @@ export function SecurityScreen({ active }: ScreenProps) {
       {!loader.error && data?.partialError ? <ErrorState message={data.partialError} onRetry={loader.reload} /> : null}
 
       <SectionHeader title="Signed-in devices" count={data ? data.devices.length : null} />
-      {!data && loader.loading ? <SkeletonCard lines={2} /> : null}
+      {!data && loader.loading ? <LoadingCard lines={2} /> : null}
       {data && data.devices.length === 0 && !error ? (
         <EmptyState icon="monitor" title="No device details yet" message="Sessions appear here once your ID is used on a device." />
       ) : null}
@@ -47,7 +47,7 @@ export function SecurityScreen({ active }: ScreenProps) {
       ))}
 
       <SectionHeader title="Recent activity" count={data ? data.activity.length : null} />
-      {!data && loader.loading ? <SkeletonCard lines={3} /> : null}
+      {!data && loader.loading ? <LoadingCard lines={3} /> : null}
       {data && data.activity.length === 0 && !error ? (
         <EmptyState icon="history" title="Nothing recent" message="Sign-ins and security events will show up here." />
       ) : null}

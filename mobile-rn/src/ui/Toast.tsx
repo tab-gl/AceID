@@ -3,7 +3,8 @@ import { Pressable, StyleSheet } from 'react-native';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReduceMotion } from '@/motion';
-import { EMPHASIZED, HAIRLINE, SHAPE, SPACE, DURATION, springFor } from '@/theme/tokens';
+import { DURATION, EMPHASIZED, GLASS, SPACE, springFor } from '@/design-system/tokens';
+import { GlassSurface } from '@/design-system/glass';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Icon } from '@/icons/Icon';
 import { AppText } from './Text';
@@ -74,20 +75,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           key={current.id}
           accessibilityLiveRegion="polite"
         >
-          <Pressable
-            onPress={hide}
-            accessibilityRole="alert"
-            accessibilityLabel={current.message}
-            style={[styles.toast, { backgroundColor: colors.inverse, borderColor: colors.inverse }]}
-          >
-            <Icon
-              name={current.tone === 'danger' ? 'alert' : current.tone === 'success' ? 'check' : 'bell'}
-              size={18}
-              color={current.tone === 'neutral' ? colors.inverseContent : tint}
-            />
-            <AppText variant="bodyMedium" color={colors.inverseContent} style={styles.message}>
-              {current.message}
-            </AppText>
+          <Pressable onPress={hide} accessibilityRole="alert" accessibilityLabel={current.message}>
+            {/* Toasts float above the pages, so they can use a real backdrop blur. */}
+            <GlassSurface
+              tone="inverse"
+              blur
+              radius={GLASS.radius.capsule}
+              contentStyle={styles.toast}
+            >
+              <Icon
+                name={current.tone === 'danger' ? 'alert' : current.tone === 'success' ? 'check' : 'bell'}
+                size={18}
+                color={current.tone === 'neutral' ? colors.inverseContent : tint}
+              />
+              <AppText variant="bodyMedium" color={colors.inverseContent} style={styles.message}>
+                {current.message}
+              </AppText>
+            </GlassSurface>
           </Pressable>
         </Animated.View>
       ) : null}
@@ -109,8 +113,6 @@ const styles = StyleSheet.create({
     gap: SPACE.sm,
     paddingVertical: SPACE.sm + 2,
     paddingHorizontal: SPACE.md,
-    borderRadius: SHAPE.full,
-    borderWidth: HAIRLINE,
     maxWidth: '100%',
   },
   message: { flexShrink: 1 },

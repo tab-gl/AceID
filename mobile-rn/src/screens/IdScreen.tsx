@@ -6,12 +6,13 @@ import { fetchAccount, toProfile, type Profile } from '@/api/queries';
 import { useLoader } from '@/api/useLoader';
 import { webUrl, WEB } from '@/config';
 import { useEnter, usePress } from '@/motion';
-import { HAIRLINE, SHAPE, SPACE, springFor } from '@/theme/tokens';
+import { GLASS, HAIRLINE, SHAPE, SPACE, springFor } from '@/design-system/tokens';
+import { GlassSurface } from '@/design-system/glass';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { ScreenProps } from '@/navigation/MainShell';
 import { Icon } from '@/icons/Icon';
 import { haptic } from '@/ui/haptics';
-import { ActionRow, Avatar, Button, Card, ErrorState, Eyebrow, Rule, SkeletonCard } from '@/ui/primitives';
+import { ActionRow, Avatar, Button, Card, ErrorState, Eyebrow, Rule, LoadingCard } from '@/ui/primitives';
 import { PageScroll } from '@/ui/PageScroll';
 import { ConfirmSheet } from '@/ui/Sheet';
 import { useToast } from '@/ui/Toast';
@@ -92,7 +93,7 @@ export function IdScreen({ active }: ScreenProps) {
             <Button label="Edit profile" icon="edit" variant="secondary" fullWidth disabled={loader.loading} onPress={() => setEditing(true)} />
           </Card>
         ) : (
-          <SkeletonCard lines={3} />
+          <LoadingCard lines={3} />
         )}
 
         <Eyebrow>Security, on the web</Eyebrow>
@@ -138,21 +139,22 @@ function AppearanceRow({ index, dark, onToggle }: { index: number; dark: boolean
           haptic.select();
           ref.current?.measureInWindow((x, y, width, height) => onToggle({ x: x + width / 2, y: y + height / 2 }));
         }}
-        style={[styles.row, { backgroundColor: colors.panel, borderColor: colors.border }]}
       >
-        <View ref={ref} collapsable={false} style={styles.measureAnchor} />
-        <View style={[styles.tile, { borderColor: colors.border }]}>
-          <Icon name={dark ? 'moon' : 'sun'} size={20} active color={colors.content} />
-        </View>
-        <View style={styles.flex}>
-          <AppText variant="titleMedium">Dark appearance</AppText>
-          <AppText variant="bodySmall" color={colors.muted}>
-            {dark ? 'Dark palette, ink on paper inverted' : 'Light palette, ink on paper'}
-          </AppText>
-        </View>
-        <Animated.View style={[styles.track, { borderColor: colors.border }, trackStyle]}>
-          <Animated.View style={[styles.knob, { backgroundColor: dark ? colors.inverseContent : colors.panel }, knobStyle]} />
-        </Animated.View>
+        <GlassSurface radius={GLASS.radius.card} contentStyle={styles.row}>
+          <View ref={ref} collapsable={false} style={styles.measureAnchor} />
+          <View style={[styles.tile, { borderColor: colors.border }]}>
+            <Icon name={dark ? 'moon' : 'sun'} size={20} active color={colors.content} />
+          </View>
+          <View style={styles.flex}>
+            <AppText variant="titleMedium">Dark appearance</AppText>
+            <AppText variant="bodySmall" color={colors.muted}>
+              {dark ? 'Dark palette, ink on paper inverted' : 'Light palette, ink on paper'}
+            </AppText>
+          </View>
+          <Animated.View style={[styles.track, { borderColor: colors.border }, trackStyle]}>
+            <Animated.View style={[styles.knob, { backgroundColor: dark ? colors.inverseContent : colors.panel }, knobStyle]} />
+          </Animated.View>
+        </GlassSurface>
       </Pressable>
     </Animated.View>
   );
@@ -163,7 +165,7 @@ const styles = StyleSheet.create({
   measureAnchor: { position: 'absolute', top: '50%', right: 40, width: 4, height: 4 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   identityText: { flex: 1, gap: 2 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, padding: SPACE.md, borderWidth: HAIRLINE, borderRadius: SHAPE.extraSmall },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, padding: SPACE.md },
   tile: { width: 40, height: 40, borderWidth: HAIRLINE, alignItems: 'center', justifyContent: 'center' },
   track: { width: 52, height: 30, borderRadius: SHAPE.full, borderWidth: HAIRLINE, padding: 3, justifyContent: 'center' },
   knob: { width: 22, height: 22, borderRadius: SHAPE.full },

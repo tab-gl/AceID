@@ -3,7 +3,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { StatusBar, StyleSheet, useColorScheme, useWindowDimensions, View } from 'react-native';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useReduceMotion } from '@/motion';
-import { DARK_COLORS, DURATION, EMPHASIZED, LIGHT_COLORS, type AceColors, type ThemeMode } from './tokens';
+import { DARK_COLORS, DURATION, EMPHASIZED, LIGHT_COLORS, type AceColors, type ThemeMode } from '@/design-system/tokens';
 
 const STORAGE_KEY = 'aceid.theme.v1';
 

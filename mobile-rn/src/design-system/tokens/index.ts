@@ -133,3 +133,22 @@ export function withAlpha(hex: string, alpha: number): string {
   const b = parseInt(value.slice(4, 6), 16);
   return `rgba(${r},${g},${b},${alpha})`;
 }
+
+/**
+ * Liquid Glass material values. The blur itself comes from react-native-blur-overlay;
+ * these only shape the translucent body, the rim and the specular sheen.
+ */
+export const GLASS = {
+  /** Body opacity over the blurred backdrop, by theme. */
+  bodyAlpha: { light: 0.8, dark: 0.74 },
+  /** Opacity of the glass body when no backdrop blur is available (material fallback). */
+  materialAlpha: { light: 0.94, dark: 0.92 },
+  rim: { light: 'rgba(255,255,255,0.9)', dark: 'rgba(255,255,255,0.14)' },
+  sheen: { light: 'rgba(255,255,255,0.7)', dark: 'rgba(255,255,255,0.1)' },
+  /** Sheen strength when a glass control is pressed. */
+  pressedSheen: 1,
+  /** Fraction of the surface height covered by the top specular gradient. */
+  sheenHeight: 0.55,
+  /** Corner radii for glass surfaces. Rounder than the flat web cards on purpose. */
+  radius: { card: 22, field: 16, sheet: 28, capsule: 9999 },
+} as const;

@@ -4,7 +4,8 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReduceMotion } from '@/motion';
-import { DURATION, EMPHASIZED, HAIRLINE, SHAPE, SPACE, springFor } from '@/theme/tokens';
+import { DURATION, EMPHASIZED, GLASS, SPACE, springFor } from '@/design-system/tokens';
+import { GlassSurface } from '@/design-system/glass';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from './Text';
 import { haptic } from './haptics';
@@ -86,23 +87,22 @@ export function Sheet({
             <Pressable style={styles.flex} onPress={dismiss} accessibilityLabel="Close" />
           </Animated.View>
           <View style={styles.anchor} pointerEvents="box-none">
-            <Animated.View
-              style={[
-                styles.sheet,
-                { backgroundColor: colors.panel, borderColor: colors.border, paddingBottom: insets.bottom + SPACE.md },
-                sheetStyle,
-              ]}
-              accessibilityViewIsModal
-            >
-              <GestureDetector gesture={pan}>
-                <View style={styles.grabberZone}>
-                  <View style={[styles.grabber, { backgroundColor: colors.border }]} />
-                  <AppText variant="headline" style={styles.title}>
-                    {title}
-                  </AppText>
-                </View>
-              </GestureDetector>
-              <View style={styles.body}>{children}</View>
+            <Animated.View style={[styles.sheet, sheetStyle]} accessibilityViewIsModal>
+              {/* A Modal is its own window, so the sheet uses the translucent glass material, not a live blur. */}
+              <GlassSurface
+                radius={GLASS.radius.sheet}
+                contentStyle={[styles.sheetContent, { paddingBottom: insets.bottom + SPACE.md }]}
+              >
+                <GestureDetector gesture={pan}>
+                  <View style={styles.grabberZone}>
+                    <View style={[styles.grabber, { backgroundColor: colors.border }]} />
+                    <AppText variant="headline" style={styles.title}>
+                      {title}
+                    </AppText>
+                  </View>
+                </GestureDetector>
+                <View style={styles.body}>{children}</View>
+              </GlassSurface>
             </Animated.View>
           </View>
         </KeyboardAvoidingView>
@@ -164,14 +164,8 @@ function Confirmation({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   anchor: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, justifyContent: 'flex-end' },
-  sheet: {
-    borderTopLeftRadius: SHAPE.extraLarge,
-    borderTopRightRadius: SHAPE.extraLarge,
-    borderTopWidth: HAIRLINE,
-    borderLeftWidth: HAIRLINE,
-    borderRightWidth: HAIRLINE,
-    maxHeight: '92%',
-  },
+  sheet: { maxHeight: '92%' },
+  sheetContent: { paddingTop: 0 },
   grabberZone: { alignItems: 'center', paddingTop: SPACE.sm, paddingHorizontal: SPACE.lg, paddingBottom: SPACE.xs, gap: SPACE.sm },
   grabber: { width: 40, height: 4, borderRadius: 2 },
   title: { alignSelf: 'stretch' },

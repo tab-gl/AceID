@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useEnter } from '@/motion';
-import { HAIRLINE, SHAPE, SPACE } from '@/theme/tokens';
+import { HAIRLINE, SHAPE, SPACE } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Icon, type IconName } from '@/icons/Icon';
 import { AppText } from './Text';

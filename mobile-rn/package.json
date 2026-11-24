@@ -19,11 +19,13 @@
     "bundle:ios": "react-native bundle --platform ios --dev false --entry-file index.js --bundle-output /tmp/aceid-ios.bundle --assets-dest /tmp/aceid-ios-assets"
   },
   "dependencies": {
+    "@material/material-color-utilities": "^0.4.0",
     "@react-native-async-storage/async-storage": "^3.1.1",
     "@solar-icons/react-native": "^2.7.0",
     "react": "19.3.0",
     "react-native": "0.88.1",
     "react-native-app-auth": "^9.0.0",
+    "react-native-blur-overlay": "^3.2.1",
     "react-native-gesture-handler": "^3.5.0",
     "react-native-haptic-feedback": "^3.0.0",
     "react-native-keychain": "^11.0.0",

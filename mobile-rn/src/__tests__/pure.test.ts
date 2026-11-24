@@ -3,8 +3,8 @@ import { apiMessageFor, authMessageFor } from '@/api/errors';
 import { decodeBase64Url, idTokenClaimProblem, profileFromIdToken } from '@/auth/jwt';
 import { isRefreshRejected } from '@/auth/oidc';
 import { isLoopbackOrHttps } from '@/auth/url';
-import { springFor } from '@/theme/tokens';
-import { M3E_SPRINGS } from '@/theme/m3e-motion.generated';
+import { springFor } from '@/design-system/tokens';
+import { M3E_SPRINGS } from '@/design-system/tokens/m3e-motion.generated';
 
 const b64url = (value: string) =>
   Buffer.from(value, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/[=]+$/, '');

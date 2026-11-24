@@ -4,11 +4,12 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useLoader } from '@/api/useLoader';
 import { fetchAccount, fetchConnectedApps, fetchSecurity, toProfile, type Profile } from '@/api/queries';
 import { useCountUp } from '@/motion';
-import { HAIRLINE, SPACE, TYPE } from '@/theme/tokens';
+import { HAIRLINE, SPACE, TYPE } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Icon } from '@/icons/Icon';
 import type { ScreenProps } from '@/navigation/MainShell';
-import { ActionRow, Avatar, Card, ErrorState, Eyebrow, Skeleton } from '@/ui/primitives';
+import { ActionRow, Avatar, Card, ErrorState, Eyebrow } from '@/ui/primitives';
+import { LoadingBlock, LoadingIndicator } from '@/design-system/loading';
 import { PageScroll } from '@/ui/PageScroll';
 import { AppText } from '@/ui/Text';
 
@@ -83,7 +84,7 @@ export function HomeScreen({ active, openTab }: ScreenProps) {
           </View>
         </Card>
       ) : (
-        <Skeleton width="100%" height={132} radius={4} />
+        <LoadingBlock height={132} label="Loading your ID" />
       )}
 
       <View style={styles.stats}>
@@ -110,7 +111,7 @@ function Stat({ index, label, value, loading }: { index: number; label: string; 
     <Card index={index} padding={SPACE.md} style={styles.stat}>
       <Eyebrow>{label}</Eyebrow>
       {loading || value === null ? (
-        <Skeleton width={44} height={30} />
+        <LoadingIndicator size={22} accessibilityLabel={`Loading ${label}`} />
       ) : (
         <AppText style={[TYPE.displayMedium, { color: colors.content }, styles.hero]}>{String(value)}</AppText>
       )}

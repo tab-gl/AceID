@@ -12,8 +12,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '@/icons/Icon';
-import { springFor, SHAPE, FONT } from '@/theme/tokens';
-import { GlassSurface } from '@/ui/Glass';
+import { springFor, SHAPE, FONT } from '@/design-system/tokens';
+import { BlurTarget, GlassSurface } from '@/design-system/glass';
+import { GLASS } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 import { haptic } from '@/ui/haptics';
 import { AppText } from '@/ui/Text';
@@ -101,17 +102,22 @@ export function MainShell() {
 
   return (
     <View style={styles.flex}>
-      <GestureDetector gesture={pan}>
-        <View style={styles.flex}>
-          {TABS.map((tab, index) => (
-            <PageSlot key={tab.key} index={index} page={page} width={width}>
-              {visited.includes(index) ? <tab.Screen active={active === index} openTab={goTo} /> : null}
-            </PageSlot>
-          ))}
-        </View>
-      </GestureDetector>
+      {/* The pages are the backdrop the tab bar blurs. The bar must stay a sibling. */}
+      <BlurTarget style={styles.flex}>
+        <GestureDetector gesture={pan}>
+          <View style={styles.flex}>
+            {TABS.map((tab, index) => (
+              <PageSlot key={tab.key} index={index} page={page} width={width}>
+                {visited.includes(index) ? <tab.Screen active={active === index} openTab={goTo} /> : null}
+              </PageSlot>
+            ))}
+          </View>
+        </GestureDetector>
+      </BlurTarget>
 
       <GlassSurface
+        blur
+        radius={GLASS.radius.capsule}
         onLayout={(event: LayoutChangeEvent) => setBarWidth(event.nativeEvent.layout.width)}
         style={[
           styles.bar,
@@ -121,6 +127,7 @@ export function MainShell() {
             right: BAR_INSET + insets.right,
           },
         ]}
+        contentStyle={styles.barContent}
         accessibilityRole="tablist"
       >
         {itemWidth > 0 ? (
@@ -227,6 +234,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     height: BAR_HEIGHT,
     borderRadius: SHAPE.full,
+  },
+  barContent: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: PILL_PADDING,

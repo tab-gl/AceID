@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, TextInput, View, type KeyboardTypeOptions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { FONT, HAIRLINE, SHAPE, SPACE, TYPE, springFor } from '@/theme/tokens';
+import { FONT, GLASS, HAIRLINE, SHAPE, SPACE, TYPE, springFor } from '@/design-system/tokens';
+import { GlassSurface } from '@/design-system/glass';
 import { useTheme } from '@/theme/ThemeProvider';
 import { AppText } from './Text';
 
@@ -40,6 +41,7 @@ export function TextField({
       <AppText variant="eyebrow" color={focused ? colors.content : colors.muted}>
         {label}
       </AppText>
+      <GlassSurface tone="panel" radius={GLASS.radius.field} contentStyle={styles.field}>
       <View style={styles.row}>
         {prefix ? <AppText variant="titleMedium" color={colors.muted}>{prefix}</AppText> : null}
         <TextInput
@@ -62,6 +64,7 @@ export function TextField({
       <View style={[styles.track, { backgroundColor: colors.border }]}>
         <Animated.View style={[styles.fill, { backgroundColor: colors.content }, underlineStyle]} />
       </View>
+      </GlassSurface>
     </View>
   );
 }
@@ -71,6 +74,7 @@ const styles = StyleSheet.create({
   wrap: { gap: SPACE.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, minHeight: 40 },
   input: { flex: 1, fontSize: TYPE.body.fontSize, paddingVertical: SPACE.xs, paddingHorizontal: 0 },
-  track: { height: HAIRLINE, overflow: 'hidden', borderRadius: SHAPE.none },
+  field: { paddingHorizontal: SPACE.md, paddingTop: SPACE.xs, gap: 0 },
+  track: { height: HAIRLINE, overflow: 'hidden', borderRadius: SHAPE.none, marginBottom: SPACE.xs },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
 });

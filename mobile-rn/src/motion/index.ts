@@ -12,7 +12,7 @@ import {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { DURATION, EMPHASIZED, springFor } from '@/theme/tokens';
+import { DURATION, EMPHASIZED, springFor } from '@/design-system/tokens';
 
 /** Follows the OS "reduce motion" setting. Animations shorten to near-instant when on. */
 export function useReduceMotion(): boolean {

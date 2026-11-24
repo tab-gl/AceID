@@ -24,7 +24,7 @@ npm run android           # or: npm run ios
 npm run typecheck         # tsc --noEmit
 npm run lint              # eslint
 npm test                  # jest (24+ tests)
-npm run gen:m3e           # regenerate src/theme/m3e-motion.generated.ts
+npm run gen:m3e           # regenerate src/design-system/tokens/m3e-motion.generated.ts
 ```
 
 ## Configuration
@@ -63,35 +63,53 @@ has an issuer, an API origin, a client ID and a redirect URI, and never a secret
 - **Discovery:** the issuer in the discovery document must match the configured issuer.
   Authorization and token endpoints must be HTTPS (loopback HTTP allowed for development).
 
-## Design
+## Design system
 
-- Fonts: Figtree (UI) and Instrument Serif (display), linked on both platforms.
-- Palette: monochrome, matching the web (`#F5F5F2` / `#111111`, dark `#111111` / `#F5F5F1`).
-- Icons: Solar (`@solar-icons/react-native`).
-- Motion: M3E spring tokens generated from `@m3e/web`, Reanimated 4. Reduce-motion is respected.
-- Glass: `src/ui/Glass.tsx` is a native stand-in for the Liquid Glass look of the web
-  `glisse` library (see below).
+Hybrid, in `src/design-system/`:
 
-### About `glisse` and `glissle`
+- `tokens/`: AceID palette, type, spacing, shape, glass parameters, M3E springs
+  (`m3e-motion.generated.ts`), and the M3 monochrome roles (`m3-monochrome.ts`,
+  computed with `@material/material-color-utilities` `SchemeMonochrome`).
+- `glass/`: Liquid Glass for every non-progress surface. `GlassSurface` renders a
+  real backdrop blur through `react-native-blur-overlay` where the device supports it
+  (iOS 15.1+ and Android 12+/API 31+), and a translucent material with rim and sheen
+  elsewhere. Chrome that floats over pages (tab bar, toasts) uses blur; sheets sit in
+  a `Modal` window and use the material.
+- `loading/`: M3 Expressive loading indicator (shape-morphing, contained and
+  uncontained; indeterminate, as M3E specifies for the loader) and `LoadingBlock` for skeleton-like
+  placeholders.
+- `progress/`: M3 Expressive linear and circular progress, flat or wavy, determinate
+  and indeterminate, driven by Reanimated.
+- `hooks/`: `useGlassMode`, `useMonochrome`, `useReduceMotion`.
 
-- `glissle` is not on npm (404). It was not used.
-- `glisse` (MIT, v0.6.0) is a browser-only React library. It touches `window`,
-  `document`, `getComputedStyle` and SVG displacement filters, and peers on
-  `react-dom`. It cannot be imported into React Native. Its look was recreated in
-  `src/ui/Glass.tsx` with `react-native-svg`.
-- The native glass does not blur what is behind it. A true backdrop blur needs a
-  native module, which was deliberately not added.
+Rules: M3 Expressive is used only for loading and progress. Liquid Glass is never used
+for progress. Reduce-motion turns off morphing, wave motion and glass transitions.
+
+Fonts: Figtree (UI) and Instrument Serif (display), linked on both platforms.
+Icons: Solar (`@solar-icons/react-native`).
+
+### Platform limits
+
+- `react-native-blur-overlay` 3.2.1 is young and was measured by its author on one
+  low-end Android device. Its `glass` mode (iOS 26 `UIGlassEffect`, Android 13+ AGSL
+  lens) has not been verified on device here.
+- Live Android blur needs a `<BlurTarget>` in the same window. The overlay must not be
+  nested inside a target. `SurfaceView` content (video, maps, camera) renders blank
+  under capture-based blur.
+- `glisse` is web-only (`window`, `document`, SVG filters) and cannot run in React
+  Native. `glissle` is not on npm. Neither is used.
 
 ## Native status (honest)
 
 | Item | State |
 | --- | --- |
-| JS typecheck, lint, Jest | Passing (`npm run typecheck`, `npm run lint`, `npm test`) |
+| JS typecheck, lint, Jest | Passing (`npm run typecheck`, `npm run lint`, `npm test`, 38 tests) |
 | Android JS bundle | Builds (`react-native bundle --platform android`) |
 | iOS JS bundle | Builds (`react-native bundle --platform ios`) |
 | Android native build (Gradle) | **Not verified.** No Android SDK in the build environment |
 | iOS native build (pods, Xcode) | **Not verified.** Requires macOS |
 | AppAuth sign-in on a device | **Not verified.** Needs a provisioned client ID and a device |
+| Native Liquid Glass (blur, `glass` mode) and M3E motion on device | **Not verified.** JS bundles do not prove native blur or animation |
 | iOS URL callback into AppAuth | **Unverified.** `SceneDelegate` forwards URLs to `RCTLinkingManager`. Confirm that AppAuth resumes the flow on a device |
 | Animation quality on a device | **Not reviewed** |
 | Visual parity with the website | Partial: palette, fonts and copy match. Not pixel-compared |

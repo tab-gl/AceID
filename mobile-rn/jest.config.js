@@ -5,6 +5,6 @@ module.exports = {
   moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
   // ESM-only packages must be transpiled for Jest.
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-navigation|@solar-icons|react-native-svg|react-native-reanimated|react-native-worklets|react-native-gesture-handler|react-native-safe-area-context|react-native-haptic-feedback|react-native-keychain|react-native-app-auth|@react-native-async-storage)/)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-navigation|@solar-icons|react-native-svg|react-native-reanimated|react-native-worklets|react-native-gesture-handler|react-native-safe-area-context|react-native-haptic-feedback|react-native-keychain|react-native-app-auth|@react-native-async-storage|@material|react-native-blur-overlay)/)',
   ],
 };

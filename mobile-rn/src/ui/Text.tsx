@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, type StyleProp, type TextProps, type TextStyle } from 'react-native';
-import { TYPE, type TypeVariant } from '@/theme/tokens';
+import { TYPE, type TypeVariant } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 
 interface AppTextProps extends TextProps {

@@ -4,11 +4,11 @@ import { useAuth } from '@/auth/AuthProvider';
 import { errorMessage } from '@/api/errors';
 import { fetchConnectedApps, revokeConnectedApp, type ConnectedApp } from '@/api/queries';
 import { useLoader } from '@/api/useLoader';
-import { SPACE } from '@/theme/tokens';
+import { SPACE } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { ScreenProps } from '@/navigation/MainShell';
 import { AppText } from '@/ui/Text';
-import { Card, Button, EmptyState, ErrorState, SkeletonCard } from '@/ui/primitives';
+import { Card, Button, EmptyState, ErrorState, LoadingCard } from '@/ui/primitives';
 import { PageScroll } from '@/ui/PageScroll';
 import { ConfirmSheet } from '@/ui/Sheet';
 import { useToast } from '@/ui/Toast';
@@ -62,7 +62,7 @@ export function ConnectedAppsScreen({ active }: ScreenProps) {
         onRefresh={loader.reload}
       >
         {loader.error ? <ErrorState message={loader.error} onRetry={loader.reload} /> : null}
-        {!loader.data && loader.loading ? <SkeletonCard lines={2} /> : null}
+        {!loader.data && loader.loading ? <LoadingCard lines={2} /> : null}
         {loader.data && apps.length === 0 && !loader.error ? (
           <EmptyState icon="link" title="No connected apps" message="When a service uses Ace ID, it appears here." />
         ) : null}
