@@ -11,12 +11,18 @@ on:
     paths:
       - "mobile-rn/**"
       - ".github/workflows/react-native.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: react-native-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
+    name: Typecheck, lint, test, JS bundles
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,7 +41,80 @@ jobs:
         run: npm run lint
       - name: Unit tests
         run: npm test
-      - name: Web bundle
-        run: npx expo export --platform web --output-dir /tmp/web-export
-      - name: Android bundle
-        run: npx expo export --platform android --output-dir /tmp/android-export
+      - name: Android JS bundle
+        run: npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output /tmp/android.bundle --assets-dest /tmp/assets-android
+      - name: iOS JS bundle
+        run: npx react-native bundle --platform ios --dev false --entry-file index.js --bundle-output /tmp/ios.bundle --assets-dest /tmp/assets-ios
+
+  android:
+    name: Android APKs (split per ABI)
+    needs: check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-rn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile-rn/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - name: Build release APKs
+        working-directory: mobile-rn/android
+        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+      - name: List APKs
+        working-directory: mobile-rn/android
+        run: find app/build/outputs/apk -name "*.apk" -print
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aceid-android-apks
+          path: mobile-rn/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  ios:
+    name: iOS IPA (unsigned)
+    needs: check
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: mobile-rn
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile-rn/package-lock.json
+      - run: npm ci
+      - name: Install pods
+        working-directory: mobile-rn/ios
+        run: pod install
+      - name: Archive (unsigned)
+        working-directory: mobile-rn/ios
+        run: |
+          xcodebuild -workspace AceId.xcworkspace -scheme AceId -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/AceId.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            archive
+      - name: Package IPA
+        run: |
+          APP="$(find "$RUNNER_TEMP/AceId.xcarchive/Products/Applications" -maxdepth 1 -name '*.app' | head -n1)"
+          test -n "$APP"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qr "$GITHUB_WORKSPACE/mobile-rn/AceId-unsigned.ipa" Payload)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aceid-unsigned-ipa
+          path: mobile-rn/AceId-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
