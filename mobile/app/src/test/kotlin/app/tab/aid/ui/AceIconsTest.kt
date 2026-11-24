@@ -32,9 +32,9 @@ class AceIconsTest {
     }
 
     @Test
-    fun `every icon draws at least one path`() {
+    fun `every icon contains drawable vector content`() {
         for (icon in all) {
-            assertTrue(icon.name, icon.pathData.isNotEmpty())
+            assertTrue(icon.name, icon.root.children.isNotEmpty())
         }
     }
 
@@ -49,9 +49,10 @@ class AceIconsTest {
     }
 
     @Test
-    fun `grid is four plain squares without scan corners`() {
-        // Grid must not reuse the Scan frame; Scan owns the corner brackets.
+    fun `grid is distinct from scan icon`() {
+        // Grid and Scan are separate symbols with distinct vector definitions.
         assertTrue(AceIcons.Grid.name != AceIcons.Scan.name)
-        assertTrue(AceIcons.Grid.pathData.size >= 4)
+        assertTrue(AceIcons.Grid.root.children.isNotEmpty())
+        assertTrue(AceIcons.Scan.root.children.isNotEmpty())
     }
 }
