@@ -47,9 +47,11 @@ jobs:
         run: npx react-native bundle --platform ios --dev false --entry-file index.js --bundle-output /tmp/ios.bundle --assets-dest /tmp/assets-ios
 
   android:
-    name: Android APKs (one artifact per ABI)
+    name: Android APKs (individual release assets)
     needs: check
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: mobile-rn
@@ -104,34 +106,18 @@ jobs:
             printf '%s  ' "$abi"
             ls -lh "$apk"
           done
-      - name: Upload armeabi-v7a APK
-        uses: actions/upload-artifact@v4
+      - name: Publish individual APK release assets
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
         with:
-          name: aceid-android-armeabi-v7a
-          path: mobile-rn/android/app/build/outputs/apk/release/*armeabi-v7a*release*.apk
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload arm64-v8a APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: aceid-android-arm64-v8a
-          path: mobile-rn/android/app/build/outputs/apk/release/*arm64-v8a*release*.apk
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload x86 APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: aceid-android-x86
-          path: mobile-rn/android/app/build/outputs/apk/release/*x86-release*.apk
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload x86_64 APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: aceid-android-x86_64
-          path: mobile-rn/android/app/build/outputs/apk/release/*x86_64*release*.apk
-          if-no-files-found: error
-          retention-days: 14
+          tag_name: android-build-${{ github.run_number }}
+          name: Android APKs #${{ github.run_number }}
+          prerelease: true
+          files: |
+            mobile-rn/android/app/build/outputs/apk/release/*armeabi-v7a*release*.apk
+            mobile-rn/android/app/build/outputs/apk/release/*arm64-v8a*release*.apk
+            mobile-rn/android/app/build/outputs/apk/release/*x86-release*.apk
+            mobile-rn/android/app/build/outputs/apk/release/*x86_64*release*.apk
 
   ios:
     name: iOS IPA (unsigned)
