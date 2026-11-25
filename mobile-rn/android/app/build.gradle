@@ -85,7 +85,7 @@ android {
         versionCode 1
         versionName "1.0"
         // OAuth redirect scheme used by react-native-app-auth (see src/config.ts).
-        manifestPlaceholders = [appAuthRedirectScheme: "app.tab.aid"]
+        manifestPlaceholders = [appAuthRedirectScheme: "app.tab.aid", usesCleartextTraffic: "false"]
     }
     // One APK per CPU ABI. No universal APK: keep each download architecture-specific and small.
     splits {
