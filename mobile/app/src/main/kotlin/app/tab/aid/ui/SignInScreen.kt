@@ -1,5 +1,7 @@
 package app.tab.aid.ui
 
+import app.tab.aid.ui.components.ShapeMorphLoader
+import app.tab.aid.ui.components.glass
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -84,7 +85,7 @@ fun SignInScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, colors.border)
+                .glass()
                 .padding(18.dp),
         ) {
             Text(
@@ -115,11 +116,7 @@ fun SignInScreen(
             ),
         ) {
             if (signingIn) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = colors.background,
-                )
+                ShapeMorphLoader(size = 18.dp, color = colors.background)
             } else {
                 Icon(AceIcons.Login, contentDescription = null, modifier = Modifier.size(18.dp))
             }
@@ -135,7 +132,7 @@ fun SignInScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, colors.border)
+                    .glass()
                     .semantics { liveRegion = LiveRegionMode.Polite }
                     .padding(14.dp),
             ) {

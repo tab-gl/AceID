@@ -1,5 +1,6 @@
 package app.tab.aid.ui
 
+import app.tab.aid.ui.components.WavyProgressBar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -50,6 +51,9 @@ fun SecurityScreen(api: AceIdApi, onOpenWeb: () -> Unit) {
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            if (state.loading || state.refreshing) {
+                item { WavyProgressBar(Modifier.fillMaxWidth()) }
+            }
             item {
                 Text("Security", style = MaterialTheme.typography.displayMedium, color = colors.content)
             }

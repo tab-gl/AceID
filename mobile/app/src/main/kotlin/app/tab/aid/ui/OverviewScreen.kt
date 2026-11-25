@@ -1,5 +1,7 @@
 package app.tab.aid.ui
 
+import app.tab.aid.ui.components.WavyProgressBar
+import app.tab.aid.ui.components.glass
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -75,6 +77,9 @@ fun OverviewScreen(
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            if (state.loading || state.refreshing) {
+                item { WavyProgressBar(Modifier.fillMaxWidth()) }
+            }
             item {
                 Text(
                     text = "YOUR ID",
@@ -105,8 +110,7 @@ fun OverviewScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(colors.panel)
-                        .border(1.dp, colors.border)
+                        .glass()
                         .padding(18.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

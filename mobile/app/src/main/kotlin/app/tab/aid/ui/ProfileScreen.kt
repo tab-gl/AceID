@@ -1,5 +1,7 @@
 package app.tab.aid.ui
 
+import app.tab.aid.ui.components.WavyProgressBar
+import app.tab.aid.ui.components.glass
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -104,6 +106,9 @@ fun ProfileScreen(
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            if (state.loading || state.refreshing) {
+                item { WavyProgressBar(Modifier.fillMaxWidth()) }
+            }
             item {
                 Text("Your ID", style = MaterialTheme.typography.displayMedium, color = colors.content)
             }
@@ -122,8 +127,7 @@ fun ProfileScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(colors.panel)
-                        .border(1.dp, colors.border)
+                        .glass()
                         .padding(18.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
