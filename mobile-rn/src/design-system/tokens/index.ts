@@ -61,17 +61,17 @@ export const FONT = {
 } as const;
 
 export const TYPE = {
-  displayXL: { fontFamily: FONT.serif, fontSize: 58, lineHeight: 56, letterSpacing: -1.9 },
-  displayLarge: { fontFamily: FONT.serif, fontSize: 46, lineHeight: 46, letterSpacing: -1.5 },
-  displayMedium: { fontFamily: FONT.serif, fontSize: 36, lineHeight: 37, letterSpacing: -1.0 },
-  headline: { fontFamily: FONT.serif, fontSize: 27, lineHeight: 29, letterSpacing: -0.5 },
+  displayXL: { fontFamily: FONT.serif, fontSize: 58, lineHeight: 68, letterSpacing: -1.9 },
+  displayLarge: { fontFamily: FONT.serif, fontSize: 46, lineHeight: 54, letterSpacing: -1.5 },
+  displayMedium: { fontFamily: FONT.serif, fontSize: 36, lineHeight: 43, letterSpacing: -1.0 },
+  headline: { fontFamily: FONT.serif, fontSize: 27, lineHeight: 33, letterSpacing: -0.5 },
   title: { fontFamily: FONT.extrabold, fontSize: 21, lineHeight: 27, letterSpacing: -0.4 },
   titleMedium: { fontFamily: FONT.bold, fontSize: 16, lineHeight: 22 },
   body: { fontFamily: FONT.regular, fontSize: 16, lineHeight: 25 },
   bodyMedium: { fontFamily: FONT.regular, fontSize: 14, lineHeight: 21 },
   bodySmall: { fontFamily: FONT.regular, fontSize: 12.5, lineHeight: 18 },
   label: { fontFamily: FONT.extrabold, fontSize: 14, lineHeight: 18 },
-  eyebrow: { fontFamily: FONT.bold, fontSize: 11, lineHeight: 14, letterSpacing: 1.3, textTransform: 'uppercase' },
+  eyebrow: { fontFamily: FONT.bold, fontSize: 11, lineHeight: 16, letterSpacing: 1.3, textTransform: 'uppercase' },
 } satisfies Record<string, TextStyle>;
 
 export type TypeVariant = keyof typeof TYPE;

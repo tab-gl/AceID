@@ -8,8 +8,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 // The logo path is the full lockup (fingerprint mark over the wordmark) on a
 // 512 unit canvas. The viewBox frames only that lockup.
-const LOCKUP_VIEWBOX = '130 128 252 356';
-const LOCKUP_ASPECT = 252 / 356;
+const LOCKUP_VIEWBOX = '118 116 276 380';
+const LOCKUP_ASPECT = 276 / 380;
 
 /** The Ace ID lockup in the current content colour, springing into place on mount. */
 export function Logo({ height, color, delay = 0, animate = true }: { height: number; color?: string; delay?: number; animate?: boolean }) {

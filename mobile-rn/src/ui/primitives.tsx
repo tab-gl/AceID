@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Divider } from 'react-native-astryx/Divider';
 import { Image, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, cancelAnimation, Easing } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming, cancelAnimation, Easing } from 'react-native-reanimated';
 import { useEnter, usePress } from '@/motion';
 import { useTheme } from '@/theme/ThemeProvider';
-import { FONT, GLASS, HAIRLINE, SHAPE, SPACE, TYPE } from '@/design-system/tokens';
+import { FONT, GLASS, HAIRLINE, SHAPE, SPACE, TYPE, springFor } from '@/design-system/tokens';
+import { useMonochrome } from '@/design-system/hooks';
 import { GlassSurface } from '@/design-system/glass';
 import { LoadingBlock, LoadingIndicator } from '@/design-system/loading';
 import { AppText } from './Text';
@@ -48,6 +49,13 @@ export function Eyebrow({ children, color }: { children: React.ReactNode; color?
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
+// Material 3 Expressive buttons, monochrome: filled, tonal, text and outlined-error.
+// Medium size (56dp), round shape that morphs toward a squarer corner while pressed,
+// with a state layer. Buttons are never glass.
+const BUTTON_HEIGHT = 56;
+const BUTTON_ROUND = BUTTON_HEIGHT / 2;
+const BUTTON_PRESSED = 16;
+
 export function Button({
   label,
   onPress,
@@ -67,37 +75,36 @@ export function Button({
   fullWidth?: boolean;
   accessibilityHint?: string;
 }) {
-  const { colors } = useTheme();
-  const press = usePress(0.96);
-  const [pressed, setPressed] = useState(false);
+  const m3 = useMonochrome();
   const inactive = disabled || loading;
+  const shape = useSharedValue(0);
 
-  const palette = {
-    primary: { tone: 'inverse' as const, fg: colors.inverseContent },
-    secondary: { tone: 'panel' as const, fg: colors.content },
-    ghost: { tone: null, fg: colors.content },
-    danger: { tone: 'danger' as const, fg: colors.danger },
+  const roles = {
+    primary: { bg: m3.primary, fg: m3.onPrimary, border: 'transparent' },
+    secondary: { bg: m3.secondaryContainer, fg: m3.onSecondaryContainer, border: 'transparent' },
+    ghost: { bg: 'transparent', fg: m3.primary, border: 'transparent' },
+    danger: { bg: 'transparent', fg: m3.error, border: m3.error },
   }[variant];
 
+  const container = useAnimatedStyle(() => ({
+    borderRadius: BUTTON_ROUND - (BUTTON_ROUND - BUTTON_PRESSED) * shape.value,
+  }));
+  const stateLayer = useAnimatedStyle(() => ({ opacity: 0.1 * shape.value }));
+
   return (
-    <Animated.View style={[press.style, fullWidth && styles.fullWidth]}>
-      {palette.tone ? (
-        <GlassSurface
-          tone={palette.tone}
-          blur={false}
-          interactive
-          pressed={pressed && !inactive}
-          radius={GLASS.radius.capsule}
-          style={[styles.button, disabled && styles.disabled, fullWidth && styles.fullWidth]}
-          contentStyle={styles.buttonContent}
-        >
-          <ButtonBody loading={loading} icon={icon} label={label} color={palette.fg} />
-        </GlassSurface>
-      ) : (
-        <View style={[styles.button, styles.buttonContent, disabled && styles.disabled, fullWidth && styles.fullWidth]}>
-          <ButtonBody loading={loading} icon={icon} label={label} color={palette.fg} />
-        </View>
-      )}
+    <Animated.View
+      style={[
+        styles.button,
+        { backgroundColor: roles.bg, borderColor: roles.border },
+        container,
+        disabled && styles.disabled,
+        fullWidth && styles.fullWidth,
+      ]}
+    >
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: roles.fg }, stateLayer]} />
+      <View style={styles.buttonContent}>
+        <ButtonBody loading={loading} icon={icon} label={label} color={roles.fg} />
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
@@ -105,12 +112,10 @@ export function Button({
         accessibilityState={{ disabled: inactive, busy: loading }}
         disabled={inactive}
         onPressIn={() => {
-          setPressed(true);
-          press.pressIn();
+          shape.value = withSpring(1, springFor('fast-spatial'));
         }}
         onPressOut={() => {
-          setPressed(false);
-          press.pressOut();
+          shape.value = withSpring(0, springFor('default-spatial'));
         }}
         onPress={() => {
           haptic.tap();
@@ -126,7 +131,7 @@ function ButtonBody({ loading, icon, label, color }: { loading: boolean; icon?: 
   if (loading) return <LoadingIndicator size={24} color={color} containerColor="transparent" />;
   return (
     <View style={styles.buttonInner}>
-      {icon ? <Icon name={icon} size={18} color={color} /> : null}
+      {icon ? <Icon name={icon} size={20} color={color} /> : null}
       <AppText variant="label" color={color}>
         {label}
       </AppText>
@@ -318,9 +323,9 @@ export function PulseDot({ active, color }: { active: boolean; color: string }) 
 }
 
 const styles = StyleSheet.create({
-  disabled: { opacity: 0.45 },
-  button: { minHeight: 50, borderRadius: SHAPE.full, overflow: 'hidden' },
-  buttonContent: { minHeight: 50, paddingHorizontal: SPACE.lg, alignItems: 'center', justifyContent: 'center' },
+  disabled: { opacity: 0.38 },
+  button: { minHeight: BUTTON_HEIGHT, borderWidth: 1, overflow: 'hidden' },
+  buttonContent: { minHeight: BUTTON_HEIGHT - 2, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center' },
   buttonInner: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
   fullWidth: { alignSelf: 'stretch', width: '100%' },
   flex: { flex: 1 },

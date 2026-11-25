@@ -48,7 +48,7 @@ export function SignInScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Animated.View style={[styles.brand, actions]}>
-        <Logo height={30} delay={60} />
+        <Logo height={48} delay={60} />
         <Animated.View style={[styles.brandRule, { backgroundColor: colors.border }, ruleGrow]} />
       </Animated.View>
 
@@ -59,7 +59,7 @@ export function SignInScreen() {
         <AppText
           variant="displayXL"
           color={colors.muted}
-          style={{ fontFamily: FONT.serifItalic }}
+          style={styles.italic}
         >
           Secure by default.
         </AppText>
@@ -132,9 +132,10 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: SPACE.xl, gap: SPACE.lg, minHeight: '100%', justifyContent: 'space-between' },
   brand: { gap: SPACE.md },
   brandRule: { height: HAIRLINE },
-  hero: { gap: 2, marginTop: SPACE.xl },
+  hero: { gap: 0, marginTop: SPACE.xl },
+  italic: { fontFamily: FONT.serifItalic, paddingRight: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.xs },
-  chip: { borderWidth: HAIRLINE, paddingVertical: 4, paddingHorizontal: SPACE.sm },
+  chip: { borderWidth: HAIRLINE, borderRadius: 8, minHeight: 32, justifyContent: 'center', paddingHorizontal: SPACE.sm },
   actions: { gap: SPACE.sm, marginTop: SPACE.md },
   footer: { gap: SPACE.xs },
 });

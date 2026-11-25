@@ -11,7 +11,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useMonochrome, useReduceMotion } from '@/design-system/hooks';
-import { nativeM3 } from '../native/m3';
 import { EMPHASIZED } from '@/design-system/tokens';
 import { circularWaveCount, circularWavePath, wavyAmplitudeTarget } from './geometry';
 
@@ -132,38 +131,7 @@ function ShapeCircularProgress({
   );
 }
 
-/**
- * Circular M3E progress. Determinate wavy progress uses the native react-native-m3
- * indicator when it is linked and motion is allowed. Indeterminate and flat
- * progress, reduced motion, and builds without the native module use the SVG
- * implementation above.
- */
+/** Circular M3E progress, flat or wavy, determinate or indeterminate. Drawn with react-native-svg. */
 export function CircularProgress(props: CircularProgressProps) {
-  const m3 = useMonochrome();
-  const reduce = useReduceMotion();
-  const { progress = 0, indeterminate = false, wavy = false, size = 48, thickness = 4, label = 'Progress', style } = props;
-  if (nativeM3 && wavy && !indeterminate && !reduce) {
-    const Native = nativeM3.WavyProgressIndicator;
-    const clamped = Math.min(1, Math.max(0, progress));
-    return (
-      <View
-        accessible
-        accessibilityRole="progressbar"
-        accessibilityLabel={label}
-        accessibilityValue={{ min: 0, max: 100, now: Math.round(clamped * 100) }}
-        style={[{ width: size, height: size }, style]}
-      >
-        <Native
-          style={{ width: size, height: size }}
-          progress={clamped}
-          color={m3.primary}
-          trackColor={m3.surfaceContainerHighest}
-          strokeWidth={thickness}
-          trackStrokeWidth={thickness}
-          wavelength={15}
-        />
-      </View>
-    );
-  }
   return <ShapeCircularProgress {...props} />;
 }

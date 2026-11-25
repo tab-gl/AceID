@@ -13,8 +13,6 @@ import { useMonochrome, useReduceMotion } from '@/design-system/hooks';
 import { SHAPE_RADII } from './shapes';
 import { LOADING_DURATION_MS, loadingFrame, shapePath } from './morph';
 import { SHAPE_ORDER } from './shape-paths';
-import { nativeM3 } from '../native/m3';
-import { SafeBoundary } from '../glass/SafeBoundary';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -41,34 +39,8 @@ export interface LoadingIndicatorProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const HEX_COLOR = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
-
-/**
- * Material 3 Expressive loading indicator. The uncontained variant uses the native
- * react-native-m3 indicator on Android when it is linked and motion is allowed.
- * The contained variant, reduced motion, iOS, and any missing native module use
- * the shape-morphing SVG version below.
- */
+/** Material 3 Expressive loading indicator: a shape that morphs while turning. Drawn with react-native-svg. */
 export function LoadingIndicator(props: LoadingIndicatorProps) {
-  const m3 = useMonochrome();
-  const reduce = useReduceMotion();
-  const size = props.size ?? ACTIVE_SIZE;
-  if (nativeM3 && !reduce && !props.contained) {
-    const Native = nativeM3.LoadingIndicator;
-    const tint = props.color && HEX_COLOR.test(props.color) ? props.color : m3.primary;
-    return (
-      <SafeBoundary fallback={<ShapeLoadingIndicator {...props} />}>
-        <View
-          accessible
-          accessibilityRole="progressbar"
-          accessibilityLabel={props.accessibilityLabel ?? 'Loading'}
-          style={[{ width: size, height: size }, props.style]}
-        >
-          <Native style={{ width: size, height: size }} color={tint} />
-        </View>
-      </SafeBoundary>
-    );
-  }
   return <ShapeLoadingIndicator {...props} />;
 }
 
