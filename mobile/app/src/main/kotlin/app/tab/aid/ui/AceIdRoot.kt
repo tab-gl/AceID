@@ -1,9 +1,10 @@
 package app.tab.aid.ui
 
+import app.tab.aid.ui.components.ShapeMorphLoader
+import app.tab.aid.ui.components.GlassBackdrop
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -25,9 +26,10 @@ fun AceIdRoot(viewModel: AppViewModel, onStartSignIn: () -> Unit) {
     val signInError by viewModel.signInError.collectAsState()
 
     AceTheme(darkTheme = darkTheme) {
+        GlassBackdrop {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background,
+            color = androidx.compose.ui.graphics.Color.Transparent,
         ) {
             when (val current = session) {
                 SessionState.Loading -> LoadingScreen()
@@ -53,16 +55,13 @@ fun AceIdRoot(viewModel: AppViewModel, onStartSignIn: () -> Unit) {
                 }
             }
         }
+        }
     }
 }
 
 @Composable
 private fun LoadingScreen() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(26.dp),
-            strokeWidth = 2.dp,
-            color = LocalAceColors.current.content,
-        )
+        ShapeMorphLoader(size = 56.dp)
     }
 }

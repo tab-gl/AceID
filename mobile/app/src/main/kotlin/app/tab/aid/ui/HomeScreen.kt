@@ -1,5 +1,6 @@
 package app.tab.aid.ui
 
+import app.tab.aid.ui.components.glass
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.unit.dp
 import app.tab.aid.auth.AceIdConfig
 import app.tab.aid.data.AceIdApi
@@ -78,7 +78,7 @@ fun HomeScreen(
     }
 
     Scaffold(
-        containerColor = colors.background,
+        containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Row(
@@ -153,11 +153,10 @@ private fun FloatingNavigationBar(selected: Int, onSelect: (Int) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        color = colors.panel,
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .glass(RoundedCornerShape(28.dp)),
+        color = Color.Transparent,
         shape = RoundedCornerShape(28.dp),
-        shadowElevation = 12.dp,
-        border = BorderStroke(1.dp, colors.border),
     ) {
         Row(
             modifier = Modifier

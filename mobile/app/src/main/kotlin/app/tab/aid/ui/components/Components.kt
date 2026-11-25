@@ -114,8 +114,7 @@ fun ActionTile(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colors.panel)
-            .border(1.dp, colors.border)
+            .glass()
             .clickable(
                 role = androidx.compose.ui.semantics.Role.Button,
                 onClickLabel = title,
@@ -186,7 +185,7 @@ fun ErrorPanel(message: String, onRetry: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, colors.border)
+            .glass()
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Text(message, style = MaterialTheme.typography.bodySmall, color = colors.content)
@@ -202,7 +201,7 @@ fun EmptyPanel(message: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, colors.border)
+            .glass()
             .padding(18.dp),
     ) {
         Text(message, style = MaterialTheme.typography.bodySmall, color = colors.muted)
@@ -232,7 +231,7 @@ fun LabeledField(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },
             singleLine = singleLine,
-            shape = RoundedCornerShape(0.dp),
+            shape = RoundedCornerShape(16.dp),
             textStyle = MaterialTheme.typography.bodyMedium,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             prefix = prefix?.let { { Text(it, color = colors.muted) } },
@@ -241,9 +240,9 @@ fun LabeledField(
             // OutlinedTextField draws its outline from the indicator colour, so
             // a transparent indicator would hide the border entirely.
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = colors.panel,
-                unfocusedContainerColor = colors.panel,
-                disabledContainerColor = colors.panel,
+                focusedContainerColor = colors.panel.copy(alpha = 0.55f),
+                unfocusedContainerColor = colors.panel.copy(alpha = 0.55f),
+                disabledContainerColor = colors.panel.copy(alpha = 0.55f),
                 focusedTextColor = colors.content,
                 unfocusedTextColor = colors.content,
                 cursorColor = colors.content,
