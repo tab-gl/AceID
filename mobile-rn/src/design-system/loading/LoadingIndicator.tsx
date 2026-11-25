@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -15,6 +15,19 @@ import { LOADING_DURATION_MS, loadingFrame, shapePath } from './morph';
 import { SHAPE_ORDER } from './shape-paths';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+// Native Material 3 Expressive loading indicator (Jetpack Compose via Nitro). The
+// package is Android-only for now, so iOS and any load failure keep the SVG morph.
+type NativeLoading = React.ComponentType<{ style?: StyleProp<ViewStyle>; color?: string }>;
+let NativeLoadingIndicator: NativeLoading | null = null;
+if (Platform.OS === 'android') {
+  try {
+    NativeLoadingIndicator = require('react-native-m3').LoadingIndicator as NativeLoading;
+  } catch {
+    NativeLoadingIndicator = null;
+  }
+}
+const HEX_COLOR = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
 
 // Material 3 Expressive loading indicator: an active shape that morphs through the
 // seven M3 shapes while turning. Contained sits on a container circle, uncontained
@@ -82,9 +95,16 @@ export function LoadingIndicator({
         style,
       ]}
     >
-      <Svg width={size} height={size}>
-        <AnimatedPath animatedProps={animatedProps} fill={activeColor} />
-      </Svg>
+      {NativeLoadingIndicator && !reduce ? (
+        <NativeLoadingIndicator
+          style={{ width: size, height: size }}
+          color={HEX_COLOR.test(activeColor) ? activeColor : undefined}
+        />
+      ) : (
+        <Svg width={size} height={size}>
+          <AnimatedPath animatedProps={animatedProps} fill={activeColor} />
+        </Svg>
+      )}
     </View>
   );
 }

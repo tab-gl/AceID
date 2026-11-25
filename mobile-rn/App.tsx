@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { MainShell } from '@/navigation/MainShell';
 import { SignInScreen } from '@/screens/SignInScreen';
+import { AstryxTheme } from '@/theme/AstryxTheme';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { Logo } from '@/ui/Logo';
 import { ToastProvider } from '@/ui/Toast';
@@ -15,11 +16,13 @@ export default function App() {
     <GestureHandlerRootView style={styles.flex}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <RootGate />
-            </AuthProvider>
-          </ToastProvider>
+          <AstryxTheme>
+            <ToastProvider>
+              <AuthProvider>
+                <RootGate />
+              </AuthProvider>
+            </ToastProvider>
+          </AstryxTheme>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

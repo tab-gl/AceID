@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Divider } from 'react-native-astryx/Divider';
 import { Image, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, cancelAnimation, Easing } from 'react-native-reanimated';
 import { useEnter, usePress } from '@/motion';
@@ -285,8 +286,11 @@ export function SectionHeader({ title, count }: { title: string; count?: number 
 
 /** A thin hairline divider. */
 export function Rule({ spacing = SPACE.md }: { spacing?: number }) {
-  const { colors } = useTheme();
-  return <View style={{ height: HAIRLINE, backgroundColor: colors.border, marginVertical: spacing }} />;
+  return (
+    <View style={{ marginVertical: spacing }}>
+      <Divider />
+    </View>
+  );
 }
 
 /** Shows the spinning ring while `active`, then settles. Used for live status indicators. */

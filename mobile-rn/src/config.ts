@@ -33,9 +33,9 @@ export function webUrl(path: string): string {
 }
 
 export const WEB = {
-  security: '/account/security',
-  devices: '/account/devices',
-  danger: '/account/danger',
+  security: '/me/security',
+  devices: '/me/devices',
+  danger: '/me/danger',
   register: '/register',
   privacy: '/privacy',
   terms: '/terms',
