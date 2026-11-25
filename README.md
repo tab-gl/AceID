@@ -14,6 +14,7 @@ This repository contains the public web client and the native Kotlin Android ID 
 | --- | --- | --- |
 | Web | `public/` | Static HTML, CSS, and ES modules behind the API proxy in `api/` |
 | Android | `mobile/` | Kotlin, Jetpack Compose, AppAuth, Gradle |
+| React Native | `mobile-rn/` | Expo, Expo Router, React Native, Reanimated, expo-auth-session |
 
 The Android client is a native Kotlin application. It has no Flutter runtime, Dart source, or Flutter plugin, and it is built with Gradle rather than the Flutter toolchain.
 
