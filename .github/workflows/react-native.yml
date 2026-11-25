@@ -47,11 +47,14 @@ jobs:
         run: npx react-native bundle --platform ios --dev false --entry-file index.js --bundle-output /tmp/ios.bundle --assets-dest /tmp/assets-ios
 
   android:
-    name: Android APKs (individual release assets)
+    name: Android APK (${{ matrix.abi }})
     needs: check
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
     defaults:
       run:
         working-directory: mobile-rn
@@ -86,38 +89,63 @@ jobs:
             echo "ANDROID_KEY_ALIAS=$KEY_ALIAS"
             echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD"
           } >> "$GITHUB_ENV"
-      - name: Build release APKs
+      - name: Build release APK for ${{ matrix.abi }}
         working-directory: mobile-rn/android
-        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
-      - name: Verify ABI APKs
+        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon -PtargetAbi=${{ matrix.abi }} -PreactNativeArchitectures=${{ matrix.abi }}
+      - name: Verify ABI APK
         working-directory: mobile-rn/android
+        env:
+          ABI: ${{ matrix.abi }}
         shell: bash
         run: |
           set -euo pipefail
           apk_dir="app/build/outputs/apk/release"
+          apk="$(find "$apk_dir" -maxdepth 1 -type f -name "*${ABI}*release*.apk" -print -quit)"
+          if [ -z "$apk" ]; then
+            echo "::error::Missing release APK for ABI: $ABI"
+            find app/build/outputs/apk -type f -name "*.apk" -print
+            exit 1
+          fi
+          ls -lh "$apk"
+      - name: Upload APK for release assembly
+        uses: actions/upload-artifact@v4
+        with:
+          name: aceid-apk-${{ matrix.abi }}
+          path: mobile-rn/android/app/build/outputs/apk/release/*${{ matrix.abi }}*release*.apk
+          if-no-files-found: error
+          retention-days: 2
+
+  publish_android:
+    name: Publish individual Android APK assets
+    needs: android
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download ABI APKs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: aceid-apk-*
+          path: mobile-rn/android-dist
+          merge-multiple: true
+      - name: Verify all release APKs
+        shell: bash
+        run: |
+          set -euo pipefail
           for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-            apk="$(find "$apk_dir" -maxdepth 1 -type f -name "*${abi}*release*.apk" -print -quit)"
-            if [ -z "$apk" ]; then
-              echo "::error::Missing release APK for ABI: $abi"
-              echo "Available APKs:"
-              find app/build/outputs/apk -type f -name "*.apk" -print
-              exit 1
-            fi
-            printf '%s  ' "$abi"
+            apk="$(find mobile-rn/android-dist -maxdepth 1 -type f -name "*${abi}*release*.apk" -print -quit)"
+            test -n "$apk" || { echo "::error::Missing APK for $abi"; exit 1; }
             ls -lh "$apk"
           done
       - name: Publish individual APK release assets
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-build-${{ github.run_number }}
           name: Android APKs #${{ github.run_number }}
           prerelease: true
-          files: |
-            mobile-rn/android/app/build/outputs/apk/release/*armeabi-v7a*release*.apk
-            mobile-rn/android/app/build/outputs/apk/release/*arm64-v8a*release*.apk
-            mobile-rn/android/app/build/outputs/apk/release/*x86-release*.apk
-            mobile-rn/android/app/build/outputs/apk/release/*x86_64*release*.apk
+          files: mobile-rn/android-dist/*.apk
 
   ios:
     name: iOS IPA (unsigned)

@@ -71,6 +71,11 @@ def enableProguardInReleaseBuilds = false
  * this variant is about 6MiB larger per architecture than default.
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+def supportedAbis = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
+def targetAbi = project.findProperty('targetAbi')?.toString()
+if (targetAbi && !supportedAbis.contains(targetAbi)) {
+    throw new GradleException("Unsupported targetAbi: ${targetAbi}")
+}
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -92,7 +97,7 @@ android {
         abi {
             enable true
             reset()
-            include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+            include(*(targetAbi ? [targetAbi] : supportedAbis))
         }
     }
     signingConfigs {
