@@ -39,6 +39,7 @@ function parseUpstreamOrigin(value) {
 // Only the account and auth endpoints the frontend calls are
 // forwarded; everything else under /api is refused before reaching the backend.
 const ALLOWED_API_PREFIXES = [
+  "/api/me",
   "/api/account",
   "/api/email-verification",
   "/api/username-availability",
