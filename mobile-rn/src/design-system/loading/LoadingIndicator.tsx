@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -13,21 +13,11 @@ import { useMonochrome, useReduceMotion } from '@/design-system/hooks';
 import { SHAPE_RADII } from './shapes';
 import { LOADING_DURATION_MS, loadingFrame, shapePath } from './morph';
 import { SHAPE_ORDER } from './shape-paths';
+import { nativeM3 } from '../native/m3';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-// Native Material 3 Expressive loading indicator (Jetpack Compose via Nitro). The
-// package is Android-only for now, so iOS and any load failure keep the SVG morph.
-type NativeLoading = React.ComponentType<{ style?: StyleProp<ViewStyle>; color?: string }>;
-let NativeLoadingIndicator: NativeLoading | null = null;
-if (Platform.OS === 'android') {
-  try {
-    NativeLoadingIndicator = require('react-native-m3').LoadingIndicator as NativeLoading;
-  } catch {
-    NativeLoadingIndicator = null;
-  }
-}
-const HEX_COLOR = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
+
 
 // Material 3 Expressive loading indicator: an active shape that morphs through the
 // seven M3 shapes while turning. Contained sits on a container circle, uncontained
@@ -50,7 +40,37 @@ export interface LoadingIndicatorProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function LoadingIndicator({
+const HEX_COLOR = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
+
+/**
+ * Material 3 Expressive loading indicator. The uncontained variant uses the native
+ * react-native-m3 indicator on Android when it is linked and motion is allowed.
+ * The contained variant, reduced motion, iOS, and any missing native module use
+ * the shape-morphing SVG version below.
+ */
+export function LoadingIndicator(props: LoadingIndicatorProps) {
+  const m3 = useMonochrome();
+  const reduce = useReduceMotion();
+  const size = props.size ?? ACTIVE_SIZE;
+  if (nativeM3 && !reduce && !props.contained) {
+    const Native = nativeM3.LoadingIndicator;
+    const tint = props.color && HEX_COLOR.test(props.color) ? props.color : m3.primary;
+    return (
+      <View
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={props.accessibilityLabel ?? 'Loading'}
+        style={[{ width: size, height: size }, props.style]}
+      >
+        <Native style={{ width: size, height: size }} color={tint} />
+      </View>
+    );
+  }
+  return <ShapeLoadingIndicator {...props} />;
+}
+
+/** The shape-morphing M3E indicator, drawn with react-native-svg. */
+function ShapeLoadingIndicator({
   size = ACTIVE_SIZE,
   contained = false,
   color,
@@ -95,16 +115,9 @@ export function LoadingIndicator({
         style,
       ]}
     >
-      {NativeLoadingIndicator && !reduce ? (
-        <NativeLoadingIndicator
-          style={{ width: size, height: size }}
-          color={HEX_COLOR.test(activeColor) ? activeColor : undefined}
-        />
-      ) : (
-        <Svg width={size} height={size}>
-          <AnimatedPath animatedProps={animatedProps} fill={activeColor} />
-        </Svg>
-      )}
+      <Svg width={size} height={size}>
+        <AnimatedPath animatedProps={animatedProps} fill={activeColor} />
+      </Svg>
     </View>
   );
 }
