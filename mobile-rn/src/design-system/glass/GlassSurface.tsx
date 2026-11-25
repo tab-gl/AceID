@@ -6,6 +6,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { EMPHASIZED, GLASS, HAIRLINE, withAlpha, type AceColors } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useGlassMode } from '@/design-system/hooks';
+import { SafeBoundary } from './SafeBoundary';
 
 export type GlassTone = 'panel' | 'raised' | 'inverse' | 'danger';
 
@@ -18,9 +19,10 @@ interface GlassSurfaceProps extends Omit<ViewProps, 'style'> {
   radius?: number;
   tone?: GlassTone;
   /**
-   * Real backdrop blur (react-native-blur-overlay). Only for absolutely positioned
-   * chrome such as the tab bar, toasts and scrims: a blur layer does not size its
-   * parent. Falls back to the translucent material on devices without blur.
+   * Real backdrop blur, sampled from the GlassBackdrop layer behind the pages.
+   * Default on. Set false for content inside a separate window (sheets) and for
+   * surfaces that must stay opaque. Falls back to a translucent material where
+   * the device has no blur.
    */
   blur?: boolean;
   /** Glass that responds to touch: on iOS 26 the system's interactive glass. */
@@ -32,9 +34,9 @@ interface GlassSurfaceProps extends Omit<ViewProps, 'style'> {
 }
 
 /**
- * Liquid Glass surface. Layers, bottom to top: the body (a real blur when `blur`
- * is set and the device supports it, otherwise a translucent material), the specular
- * sheen and rim, then the content.
+ * Liquid Glass surface. Layers, bottom to top: the body (live blur of the backdrop
+ * when `blur` is set and the device supports it, otherwise a translucent material),
+ * the specular sheen clipped to the radius, then the content.
  */
 export function GlassSurface({
   children,
@@ -42,7 +44,7 @@ export function GlassSurface({
   contentStyle,
   radius = GLASS.radius.card,
   tone = 'panel',
-  blur = false,
+  blur = true,
   interactive = false,
   pressed = false,
   lift = false,
@@ -54,18 +56,28 @@ export function GlassSurface({
   const useBlur = blur && glassMode === 'blur';
   const look = bodyFor(colors, tone, dark, useBlur);
 
+  const outer: StyleProp<ViewStyle> = [
+    styles.outer,
+    lift ? styles.lift : null,
+    { borderRadius: radius, borderColor: look.border, backgroundColor: useBlur ? 'transparent' : look.body },
+    style,
+  ];
+  const body = { borderRadius: radius, backgroundColor: look.body };
+
   if (useBlur) {
     return (
-      <View {...rest} style={[{ borderRadius: radius }, style]}>
-        <BlurOverlay
-          visible
-          blurMode="glass"
-          glassVariant="regular"
-          glassTint={look.tint}
-          interactive={interactive}
-          fadeDuration={0}
-          style={[StyleSheet.absoluteFill, { borderRadius: radius, borderWidth: HAIRLINE, borderColor: look.border, backgroundColor: look.body }]}
-        />
+      <View {...rest} style={outer}>
+        <SafeBoundary fallback={<View style={[StyleSheet.absoluteFill, body]} />}>
+          <BlurOverlay
+            visible
+            blurMode="glass"
+            glassVariant="regular"
+            glassTint={look.tint}
+            interactive={interactive}
+            fadeDuration={0}
+            style={[StyleSheet.absoluteFill, body]}
+          />
+        </SafeBoundary>
         <Specular radius={radius} dark={dark} pressed={pressed} />
         <View style={[styles.content, contentStyle]}>{children}</View>
       </View>
@@ -73,22 +85,15 @@ export function GlassSurface({
   }
 
   return (
-    <View
-      {...rest}
-      style={[
-        styles.material,
-        lift ? styles.lift : null,
-        { borderRadius: radius, borderColor: look.border, backgroundColor: look.body },
-        style,
-      ]}
-    >
+    <View {...rest} style={outer}>
+      <View style={[StyleSheet.absoluteFill, body]} pointerEvents="none" />
       <Specular radius={radius} dark={dark} pressed={pressed} />
       <View style={[styles.content, contentStyle]}>{children}</View>
     </View>
   );
 }
 
-/** Top sheen and rim. Pure decoration: never takes touches. */
+/** Top sheen, clipped to the radius by its own wrapper. Pure decoration: never takes touches. */
 function Specular({ radius, dark, pressed }: { radius: number; dark: boolean; pressed: boolean }) {
   const press = useSharedValue(0);
   useEffect(() => {
@@ -96,24 +101,25 @@ function Specular({ radius, dark, pressed }: { radius: number; dark: boolean; pr
   }, [pressed, press]);
   const sheen = useAnimatedStyle(() => ({ opacity: 0.6 + 0.4 * press.value }));
   const sheenColor = dark ? GLASS.sheen.dark : GLASS.sheen.light;
-  const rimColor = dark ? GLASS.rim.dark : GLASS.rim.light;
   return (
-    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, borderWidth: HAIRLINE, borderColor: rimColor }, sheen]}>
-      <Svg width="100%" height="100%">
-        <Defs>
-          <LinearGradient id="glass-sheen" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={sheenColor} stopOpacity="1" />
-            <Stop offset="1" stopColor={sheenColor} stopOpacity="0" />
-          </LinearGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height={`${GLASS.sheenHeight * 100}%`} fill="url(#glass-sheen)" />
-      </Svg>
-    </Animated.View>
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.clip, { borderRadius: radius }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, sheen]}>
+        <Svg width="100%" height="100%">
+          <Defs>
+            <LinearGradient id="glass-sheen" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={sheenColor} stopOpacity="1" />
+              <Stop offset="1" stopColor={sheenColor} stopOpacity="0" />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height={`${GLASS.sheenHeight * 100}%`} fill="url(#glass-sheen)" />
+        </Svg>
+      </Animated.View>
+    </View>
   );
 }
 
 function bodyFor(colors: AceColors, tone: GlassTone, dark: boolean, blurred: boolean) {
-  // Over a blur the body must be more transparent so the backdrop shows through.
+  // Over a live blur the body is more transparent so the blurred backdrop shows through.
   const bodyAlpha = blurred ? (dark ? GLASS.bodyAlpha.dark : GLASS.bodyAlpha.light) : dark ? GLASS.materialAlpha.dark : GLASS.materialAlpha.light;
   switch (tone) {
     case 'inverse':
@@ -129,7 +135,9 @@ function bodyFor(colors: AceColors, tone: GlassTone, dark: boolean, blurred: boo
 }
 
 const styles = StyleSheet.create({
-  material: { overflow: 'hidden', borderWidth: HAIRLINE },
+  // No overflow clipping here: it cut the edges and the shadow. Clipping happens per layer.
+  outer: { borderWidth: HAIRLINE },
+  clip: { overflow: 'hidden' },
   lift: {
     shadowColor: '#000',
     shadowOpacity: 0.12,

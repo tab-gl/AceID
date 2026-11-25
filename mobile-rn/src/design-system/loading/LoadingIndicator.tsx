@@ -14,6 +14,7 @@ import { SHAPE_RADII } from './shapes';
 import { LOADING_DURATION_MS, loadingFrame, shapePath } from './morph';
 import { SHAPE_ORDER } from './shape-paths';
 import { nativeM3 } from '../native/m3';
+import { SafeBoundary } from '../glass/SafeBoundary';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -56,14 +57,16 @@ export function LoadingIndicator(props: LoadingIndicatorProps) {
     const Native = nativeM3.LoadingIndicator;
     const tint = props.color && HEX_COLOR.test(props.color) ? props.color : m3.primary;
     return (
-      <View
-        accessible
-        accessibilityRole="progressbar"
-        accessibilityLabel={props.accessibilityLabel ?? 'Loading'}
-        style={[{ width: size, height: size }, props.style]}
-      >
-        <Native style={{ width: size, height: size }} color={tint} />
-      </View>
+      <SafeBoundary fallback={<ShapeLoadingIndicator {...props} />}>
+        <View
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel={props.accessibilityLabel ?? 'Loading'}
+          style={[{ width: size, height: size }, props.style]}
+        >
+          <Native style={{ width: size, height: size }} color={tint} />
+        </View>
+      </SafeBoundary>
     );
   }
   return <ShapeLoadingIndicator {...props} />;

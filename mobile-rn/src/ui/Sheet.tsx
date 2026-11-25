@@ -90,6 +90,7 @@ export function Sheet({
             <Animated.View style={[styles.sheet, sheetStyle]} accessibilityViewIsModal>
               {/* A Modal is its own window, so the sheet uses the translucent glass material, not a live blur. */}
               <GlassSurface
+                blur={false}
                 radius={GLASS.radius.sheet}
                 contentStyle={[styles.sheetContent, { paddingBottom: insets.bottom + SPACE.md }]}
               >

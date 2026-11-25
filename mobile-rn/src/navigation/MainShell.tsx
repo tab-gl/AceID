@@ -13,7 +13,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '@/icons/Icon';
 import { springFor, SHAPE, FONT } from '@/design-system/tokens';
-import { BlurTarget, GlassSurface } from '@/design-system/glass';
+import { GlassSurface } from '@/design-system/glass';
+import { GlassBackdrop } from '@/design-system/glass/Backdrop';
 import { GLASS } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 import { haptic } from '@/ui/haptics';
@@ -118,18 +119,17 @@ export function MainShell() {
 
   return (
     <View style={styles.flex}>
-      {/* The pages are the backdrop the tab bar blurs. The bar must stay a sibling. */}
-      <BlurTarget style={styles.flex}>
-        <GestureDetector gesture={pageSwipe}>
-          <View style={styles.flex}>
-            {TABS.map((tab, index) => (
-              <PageSlot key={tab.key} index={index} page={page} width={width}>
-                {visited.includes(index) ? <tab.Screen active={active === index} openTab={goTo} /> : null}
-              </PageSlot>
-            ))}
-          </View>
-        </GestureDetector>
-      </BlurTarget>
+      {/* Glass samples the backdrop only. Pages and glass surfaces are siblings above it. */}
+      <GlassBackdrop />
+      <GestureDetector gesture={pageSwipe}>
+        <View style={styles.flex}>
+          {TABS.map((tab, index) => (
+            <PageSlot key={tab.key} index={index} page={page} width={width}>
+              {visited.includes(index) ? <tab.Screen active={active === index} openTab={goTo} /> : null}
+            </PageSlot>
+          ))}
+        </View>
+      </GestureDetector>
 
       <GlassSurface
         blur
