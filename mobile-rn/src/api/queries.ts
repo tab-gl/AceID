@@ -46,10 +46,10 @@ export function toProfile(account: JsonObject | null | undefined, fallbackName =
   };
 }
 
-export const fetchAccount = (api: AceIdApi) => api.request('/api/account');
+export const fetchAccount = (api: AceIdApi) => api.request('/api/me');
 
 export async function fetchSecurity(api: AceIdApi): Promise<{ devices: Device[]; activity: ActivityEntry[]; partialError: string | null }> {
-  const [devices, logs] = await Promise.allSettled([api.request('/api/account/devices'), api.request('/api/account/logs')]);
+  const [devices, logs] = await Promise.allSettled([api.request('/api/me/devices'), api.request('/api/me/logs')]);
   if (devices.status === 'rejected' && logs.status === 'rejected') throw devices.reason;
   return {
     devices: devices.status === 'fulfilled' ? objects(devices.value, 'devices').map(toDevice) : [],
@@ -84,7 +84,7 @@ export function toActivity(entry: JsonObject, index: number): ActivityEntry {
 }
 
 export async function fetchConnectedApps(api: AceIdApi): Promise<ConnectedApp[]> {
-  const response = await api.request('/api/account/connected-apps');
+  const response = await api.request('/api/me/connected-apps');
   return objects(response, 'connectedApps').map((app, index) => ({
     grantId: firstText(app, ['grantId']),
     name: firstText(app, ['clientName'], 'Connected app'),
@@ -95,10 +95,10 @@ export async function fetchConnectedApps(api: AceIdApi): Promise<ConnectedApp[]>
 }
 
 export function revokeConnectedApp(api: AceIdApi, grantId: string) {
-  return api.request(`/api/account/connected-apps/${encodeURIComponent(grantId)}`, { method: 'DELETE' });
+  return api.request(`/api/me/connected-apps/${encodeURIComponent(grantId)}`, { method: 'DELETE' });
 }
 
 /** POSTs only the fields that actually changed. Username and email are never resent unnecessarily. */
 export function saveProfile(api: AceIdApi, changes: JsonObject) {
-  return api.request('/api/account', { method: 'POST', body: changes });
+  return api.request('/api/me', { method: 'POST', body: changes });
 }

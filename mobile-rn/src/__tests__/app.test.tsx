@@ -63,10 +63,10 @@ describe('App', () => {
     } as never);
 
     const routes: Record<string, unknown> = {
-      '/api/account': { display_name: 'Ada Lovelace', username: 'ada', email: 'ada@x.io', email_verified: true },
-      '/api/account/devices': { devices: [{ id: 'd1', device_name: 'Chrome', os: 'macOS', location: 'Gorakhpur' }] },
-      '/api/account/logs': { log: [{ id: 'l1', name: 'Signed in', category: 'auth', browser: 'Chrome' }] },
-      '/api/account/connected-apps': { connectedApps: [] },
+      '/api/me': { display_name: 'Ada Lovelace', username: 'ada', email: 'ada@x.io', email_verified: true },
+      '/api/me/devices': { devices: [{ id: 'd1', device_name: 'Chrome', os: 'macOS', location: 'Gorakhpur' }] },
+      '/api/me/logs': { log: [{ id: 'l1', name: 'Signed in', category: 'auth', browser: 'Chrome' }] },
+      '/api/me/connected-apps': { connectedApps: [] },
     };
     const fetchMock = jest.fn(async (url: string) => {
       const path = new URL(url).pathname;
@@ -86,7 +86,7 @@ describe('App', () => {
     expect(copy).toContain('Email verified');
     expect(copy).toContain('@ada');
     const requested = fetchMock.mock.calls.map((call) => new URL(call[0] as string).pathname);
-    expect(requested).toEqual(expect.arrayContaining(['/api/account', '/api/account/devices', '/api/account/logs']));
+    expect(requested).toEqual(expect.arrayContaining(['/api/me', '/api/me/devices', '/api/me/logs']));
     const authHeader = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].headers as Record<string, string>;
     expect(authHeader.Authorization).toBe('Bearer at');
     await act(async () => renderer.unmount());

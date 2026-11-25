@@ -10,8 +10,8 @@ const trimSlash = (value: string) => value.trim().replace(/\/+$/, '');
 
 const ISSUER = trimSlash('https://identity.ace-base.cc');
 
-/** The registered public mobile client ID. Empty until the client is provisioned. */
-const CLIENT_ID = '';
+/** The registered public mobile client ID. First-party public client registered on the backend (ACEID_MOBILE_CLIENT_ID). */
+const CLIENT_ID = 'aid-app';
 
 /** Custom URL scheme; must match `appAuthRedirectScheme` in android/app/build.gradle and Info.plist. */
 const REDIRECT_SCHEME = 'app.tab.aid';
