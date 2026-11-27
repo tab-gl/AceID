@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { StatusBar, StyleSheet, useColorScheme, useWindowDimensions, View } from 'react-native';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Uniwind } from 'uniwind';
 import { useReduceMotion } from '@/motion';
 import { DARK_COLORS, DURATION, EMPHASIZED, LIGHT_COLORS, type AceColors, type ThemeMode } from '@/design-system/tokens';
 
@@ -47,6 +48,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    try {
+      Uniwind.setTheme(mode);
+    } catch {
+      // Ignore in test environments where Uniwind runtime is mocked.
+    }
+  }, [mode]);
 
   const commit = useCallback((next: ThemeMode) => {
     setMode(next);

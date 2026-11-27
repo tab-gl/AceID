@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/auth/AuthProvider';
 import { errorMessage } from '@/api/errors';
+import { AnimatedBadge } from '@/components/animated-badge';
 import { webUrl, WEB } from '@/config';
 import { useBreathe, useEnter, useReduceMotion } from '@/motion';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -56,11 +57,7 @@ export function SignInScreen() {
         <AppText variant="displayXL" accessibilityRole="header">
           Fast by design.
         </AppText>
-        <AppText
-          variant="displayXL"
-          color={colors.muted}
-          style={styles.italic}
-        >
+        <AppText variant="displayXL" color={colors.muted} style={styles.italic}>
           Secure by default.
         </AppText>
       </Animated.View>
@@ -73,11 +70,9 @@ export function SignInScreen() {
 
       <Animated.View style={[styles.chips, copy]}>
         {CAPABILITIES.map((item) => (
-          <View key={item} style={[styles.chip, { borderColor: colors.border }]}>
-            <AppText variant="bodySmall" color={colors.muted}>
-              {item}
-            </AppText>
-          </View>
+          <AnimatedBadge key={item} size="sm" status="neutral" showIcon={false}>
+            {item}
+          </AnimatedBadge>
         ))}
       </Animated.View>
 
@@ -135,7 +130,6 @@ const styles = StyleSheet.create({
   hero: { gap: 0, marginTop: SPACE.xl },
   italic: { fontFamily: FONT.serifItalic, paddingRight: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.xs },
-  chip: { borderWidth: HAIRLINE, borderRadius: 8, minHeight: 32, justifyContent: 'center', paddingHorizontal: SPACE.sm },
   actions: { gap: SPACE.sm, marginTop: SPACE.md },
   footer: { gap: SPACE.xs },
 });

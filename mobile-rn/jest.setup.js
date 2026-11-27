@@ -72,11 +72,17 @@ jest.mock('react-native-reanimated', () => {
     runOnJS: (fn) => fn,
     interpolate,
     Extrapolation: { CLAMP: 'clamp', EXTEND: 'extend', IDENTITY: 'identity' },
+    ReduceMotion: { System: 'system', Always: 'always', Never: 'never' },
+    interpolateColor: (_value, _input, output) => (Array.isArray(output) ? output[0] : '#111111'),
     Easing: {
       bezier: () => (t) => t,
       inOut: () => (t) => t,
       out: () => (t) => t,
       quad: (t) => t,
+      linear: (t) => t,
+      cubic: (t) => t,
+      ease: (t) => t,
+      in: (fn) => fn,
       back: () => (t) => t,
     },
     FadeIn: makeLayout(),
@@ -138,3 +144,19 @@ jest.mock('react-native-gesture-handler', () => {
     Directions: {},
   };
 });
+
+jest.mock('react-native-worklets', () => ({
+  scheduleOnRN: (fn, ...args) => {
+    if (typeof fn === 'function') fn(...args);
+  },
+}));
+
+jest.mock('uniwind', () => ({
+  useResolveClassNames: () => ({
+    backgroundColor: '#111111',
+    color: '#111111',
+    borderColor: '#D1D1CC',
+  }),
+  useUniwind: () => ({ theme: 'light' }),
+  Uniwind: { setTheme: jest.fn() },
+}));

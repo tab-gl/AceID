@@ -1,19 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Divider } from 'react-native-astryx/Divider';
-import { Image, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming, cancelAnimation, Easing } from 'react-native-reanimated';
-import { useEnter, usePress } from '@/motion';
+import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, cancelAnimation, Easing } from 'react-native-reanimated';
+import { Alert, AlertAction, AlertContent, AlertDescription, AlertIcon } from '@/components/alert';
+import { Button as BeuiButton, StatefulButton } from '@/components/button';
+import { Card as BeuiCard } from '@/components/card';
+import { Loader } from '@/components/loader';
+import { useEnter } from '@/motion';
 import { useTheme } from '@/theme/ThemeProvider';
-import { FONT, GLASS, HAIRLINE, SHAPE, SPACE, TYPE, springFor } from '@/design-system/tokens';
-import { useMonochrome } from '@/design-system/hooks';
-import { GlassSurface } from '@/design-system/glass';
-import { LoadingBlock, LoadingIndicator } from '@/design-system/loading';
+import { FONT, HAIRLINE, SHAPE, SPACE, TYPE } from '@/design-system/tokens';
 import { AppText } from './Text';
 import { Icon, type IconName } from '@/icons/Icon';
 import { haptic } from './haptics';
-
-// Every control and panel is Liquid Glass. Loading and progress states use the M3
-// Expressive indicators from the design system, never glass.
 
 export function Card({
   children,
@@ -30,10 +28,10 @@ export function Card({
 }) {
   const enter = useEnter(index ?? 0);
   return (
-    <Animated.View style={[enter]}>
-      <GlassSurface tone={raised ? 'raised' : 'panel'} radius={GLASS.radius.card} contentStyle={[{ padding }, style]}>
+    <Animated.View style={enter}>
+      <BeuiCard variant={raised ? 'muted' : 'outlined'} size="compact" style={[{ padding }, style]}>
         {children}
-      </GlassSurface>
+      </BeuiCard>
     </Animated.View>
   );
 }
@@ -48,13 +46,6 @@ export function Eyebrow({ children, color }: { children: React.ReactNode; color?
 }
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
-
-// Material 3 Expressive buttons, monochrome: filled, tonal, text and outlined-error.
-// Medium size (56dp), round shape that morphs toward a squarer corner while pressed,
-// with a state layer. Buttons are never glass.
-const BUTTON_HEIGHT = 56;
-const BUTTON_ROUND = BUTTON_HEIGHT / 2;
-const BUTTON_PRESSED = 16;
 
 export function Button({
   label,
@@ -75,71 +66,49 @@ export function Button({
   fullWidth?: boolean;
   accessibilityHint?: string;
 }) {
-  const m3 = useMonochrome();
-  const inactive = disabled || loading;
-  const shape = useSharedValue(0);
+  const { colors } = useTheme();
+  const beuiVariant = variant === 'danger' ? 'outline' : variant;
+  const dangerStyle = variant === 'danger' ? { borderColor: colors.danger } : undefined;
+  const handlePress = () => {
+    haptic.tap();
+    onPress();
+  };
 
-  const roles = {
-    primary: { bg: m3.primary, fg: m3.onPrimary, border: 'transparent' },
-    secondary: { bg: m3.secondaryContainer, fg: m3.onSecondaryContainer, border: 'transparent' },
-    ghost: { bg: 'transparent', fg: m3.primary, border: 'transparent' },
-    danger: { bg: 'transparent', fg: m3.error, border: m3.error },
-  }[variant];
-
-  const container = useAnimatedStyle(() => ({
-    borderRadius: BUTTON_ROUND - (BUTTON_ROUND - BUTTON_PRESSED) * shape.value,
-  }));
-  const stateLayer = useAnimatedStyle(() => ({ opacity: 0.1 * shape.value }));
-
-  return (
-    <Animated.View
-      style={[
-        styles.button,
-        { backgroundColor: roles.bg, borderColor: roles.border },
-        container,
-        disabled && styles.disabled,
-        fullWidth && styles.fullWidth,
-      ]}
-    >
-      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: roles.fg }, stateLayer]} />
-      <View style={styles.buttonContent}>
-        <ButtonBody loading={loading} icon={icon} label={label} color={roles.fg} />
-      </View>
-      <Pressable
-        accessibilityRole="button"
+  if (loading) {
+    return (
+      <StatefulButton
+        variant={beuiVariant}
+        size="lg"
+        state="loading"
+        loadingText={label}
+        disabled={disabled}
         accessibilityLabel={label}
         accessibilityHint={accessibilityHint}
-        accessibilityState={{ disabled: inactive, busy: loading }}
-        disabled={inactive}
-        onPressIn={() => {
-          shape.value = withSpring(1, springFor('fast-spatial'));
-        }}
-        onPressOut={() => {
-          shape.value = withSpring(0, springFor('default-spatial'));
-        }}
-        onPress={() => {
-          haptic.tap();
-          onPress();
-        }}
-        style={StyleSheet.absoluteFill}
-      />
-    </Animated.View>
-  );
-}
-
-function ButtonBody({ loading, icon, label, color }: { loading: boolean; icon?: IconName; label: string; color: string }) {
-  if (loading) return <LoadingIndicator size={24} color={color} containerColor="transparent" />;
-  return (
-    <View style={styles.buttonInner}>
-      {icon ? <Icon name={icon} size={20} color={color} /> : null}
-      <AppText variant="label" color={color}>
+        onPress={handlePress}
+        style={[fullWidth && styles.fullWidth, dangerStyle]}
+      >
         {label}
-      </AppText>
-    </View>
+      </StatefulButton>
+    );
+  }
+
+  return (
+    <BeuiButton
+      variant={beuiVariant}
+      size="lg"
+      disabled={disabled}
+      startIcon={icon ? ({ size, color }) => <Icon name={icon} size={size} color={variant === 'danger' ? colors.danger : String(color)} /> : undefined}
+      accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
+      onPress={handlePress}
+      style={[fullWidth && styles.fullWidth, dangerStyle]}
+    >
+      {label}
+    </BeuiButton>
   );
 }
 
-/** A glass row for navigation lists and settings. */
+/** An interactive beUI Card row for navigation lists and settings. */
 export function ActionRow({
   icon,
   title,
@@ -159,12 +128,20 @@ export function ActionRow({
 }) {
   const { colors } = useTheme();
   const enter = useEnter(index ?? 0);
-  const press = usePress(0.985);
-  const [pressed, setPressed] = useState(false);
   const tone = danger ? colors.danger : colors.content;
   return (
-    <Animated.View style={[enter, press.style]}>
-      <GlassSurface radius={GLASS.radius.card} pressed={pressed} contentStyle={styles.actionRow}>
+    <Animated.View style={enter}>
+      <BeuiCard
+        variant="outlined"
+        size="compact"
+        accessibilityRole="button"
+        accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
+        onPress={() => {
+          haptic.select();
+          onPress();
+        }}
+        style={styles.actionRow}
+      >
         <View style={[styles.iconTile, { borderColor: colors.border }]}>
           <Icon name={icon} size={20} color={tone} />
         </View>
@@ -179,24 +156,7 @@ export function ActionRow({
           ) : null}
         </View>
         {trailing ?? <Icon name="chevron" size={18} color={colors.muted} />}
-      </GlassSurface>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
-        onPressIn={() => {
-          setPressed(true);
-          press.pressIn();
-        }}
-        onPressOut={() => {
-          setPressed(false);
-          press.pressOut();
-        }}
-        onPress={() => {
-          haptic.select();
-          onPress();
-        }}
-        style={StyleSheet.absoluteFill}
-      />
+      </BeuiCard>
     </Animated.View>
   );
 }
@@ -230,11 +190,13 @@ export function Avatar({ name, url, size = 48 }: { name: string; url?: string; s
   );
 }
 
-/** A card that shows the M3 Expressive loading indicator while its data loads. */
+/** A beUI Card with beUI's animated Loader while data loads. */
 export function LoadingCard({ height = 120 }: { height?: number; lines?: number }) {
   return (
     <Card>
-      <LoadingBlock height={height} />
+      <View style={[styles.loaderWrap, { minHeight: height }]}>
+        <Loader variant="spinner" size={28} label="Loading" />
+      </View>
     </Card>
   );
 }
@@ -244,7 +206,7 @@ export function EmptyState({ icon, title, message }: { icon: IconName; title: st
   const enter = useEnter(0, { distance: 10 });
   return (
     <Animated.View style={enter}>
-      <GlassSurface radius={GLASS.radius.card} contentStyle={styles.emptyContent}>
+      <BeuiCard variant="outlined" size="compact" style={styles.emptyContent}>
         <Icon name={icon} size={28} color={colors.muted} />
         <AppText variant="titleMedium" align="center">
           {title}
@@ -252,26 +214,22 @@ export function EmptyState({ icon, title, message }: { icon: IconName; title: st
         <AppText variant="bodySmall" color={colors.muted} align="center">
           {message}
         </AppText>
-      </GlassSurface>
+      </BeuiCard>
     </Animated.View>
   );
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  const { colors } = useTheme();
-  const enter = useEnter(0, { distance: 10 });
   return (
-    <Animated.View style={enter} accessibilityRole="alert">
-      <GlassSurface tone="danger" radius={GLASS.radius.card} contentStyle={styles.errorContent}>
-        <View style={styles.errorRow}>
-          <Icon name="alert" size={20} color={colors.danger} />
-          <AppText variant="bodyMedium" color={colors.danger} style={styles.flex}>
-            {message}
-          </AppText>
-        </View>
-        <Button label="Try again" icon="refresh" variant="secondary" onPress={onRetry} />
-      </GlassSurface>
-    </Animated.View>
+    <Alert variant="destructive">
+      <AlertIcon />
+      <AlertContent>
+        <AlertDescription>{message}</AlertDescription>
+        <AlertAction>
+          <Button label="Try again" icon="refresh" variant="secondary" onPress={onRetry} />
+        </AlertAction>
+      </AlertContent>
+    </Alert>
   );
 }
 
@@ -323,10 +281,6 @@ export function PulseDot({ active, color }: { active: boolean; color: string }) 
 }
 
 const styles = StyleSheet.create({
-  disabled: { opacity: 0.38 },
-  button: { minHeight: BUTTON_HEIGHT, borderWidth: 1, overflow: 'hidden' },
-  buttonContent: { minHeight: BUTTON_HEIGHT - 2, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center' },
-  buttonInner: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xs },
   fullWidth: { alignSelf: 'stretch', width: '100%' },
   flex: { flex: 1 },
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, padding: SPACE.md },
@@ -345,16 +299,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  empty: {
-    borderWidth: HAIRLINE,
-    borderStyle: 'dashed',
-    padding: SPACE.xl,
-    alignItems: 'center',
-    gap: SPACE.xs,
-  },
+  loaderWrap: { alignItems: 'center', justifyContent: 'center' },
   emptyContent: { padding: SPACE.xl, alignItems: 'center', gap: SPACE.xs },
-  errorContent: { padding: SPACE.md, gap: SPACE.md },
-  errorRow: { flexDirection: 'row', gap: SPACE.sm, alignItems: 'flex-start' },
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: SPACE.sm },
   pulseWrap: { width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
   pulseRing: { position: 'absolute', width: 14, height: 14, borderRadius: 7 },

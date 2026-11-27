@@ -1,13 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { Linking, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useAuth } from '@/auth/AuthProvider';
 import { fetchAccount, toProfile, type Profile } from '@/api/queries';
 import { useLoader } from '@/api/useLoader';
+import { Switch } from '@/components/switch';
 import { webUrl, WEB } from '@/config';
-import { useEnter, usePress } from '@/motion';
-import { GLASS, HAIRLINE, SHAPE, SPACE, springFor } from '@/design-system/tokens';
-import { GlassSurface } from '@/design-system/glass';
+import { useEnter } from '@/motion';
+import { HAIRLINE, SHAPE, SPACE } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { ScreenProps } from '@/navigation/MainShell';
 import { Icon } from '@/icons/Icon';
@@ -75,7 +75,7 @@ export function IdScreen({ active }: ScreenProps) {
         {loader.error ? <ErrorState message={loader.error} onRetry={loader.reload} /> : null}
 
         {profile ? (
-          <Card index={0} raised padding={SPACE.lg} style={{ gap: SPACE.lg }}>
+          <Card index={0} raised padding={SPACE.lg} style={styles.cardGap}>
             <View style={styles.identity}>
               <Avatar name={profile.displayName} url={profile.avatarUrl} size={68} />
               <View style={styles.identityText}>
@@ -119,54 +119,37 @@ function AppearanceRow({ index, dark, onToggle }: { index: number; dark: boolean
   const { colors } = useTheme();
   const enter = useEnter(index);
   const ref = useRef<React.ComponentRef<typeof View>>(null);
-  const press = usePress(0.985);
-  const knob = useSharedValue(dark ? 1 : 0);
-  React.useEffect(() => {
-    knob.value = withSpring(dark ? 1 : 0, springFor('default-spatial'));
-  }, [dark, knob]);
-  const knobStyle = useAnimatedStyle(() => ({ transform: [{ translateX: knob.value * 22 }] }));
-  const trackStyle = useAnimatedStyle(() => ({ backgroundColor: knob.value > 0.5 ? colors.inverse : colors.border }));
+
+  const handleToggle = () => {
+    haptic.select();
+    ref.current?.measureInWindow((x, y, width, height) => onToggle({ x: x + width / 2, y: y + height / 2 }));
+  };
 
   return (
-    <Animated.View style={[enter, press.style]}>
-      <Pressable
-        accessibilityRole="switch"
-        accessibilityLabel="Dark appearance"
-        accessibilityState={{ checked: dark }}
-        onPressIn={press.pressIn}
-        onPressOut={press.pressOut}
-        onPress={() => {
-          haptic.select();
-          ref.current?.measureInWindow((x, y, width, height) => onToggle({ x: x + width / 2, y: y + height / 2 }));
-        }}
-      >
-        <GlassSurface radius={GLASS.radius.card} contentStyle={styles.row}>
-          <View ref={ref} collapsable={false} style={styles.measureAnchor} />
-          <View style={[styles.tile, { borderColor: colors.border }]}>
-            <Icon name={dark ? 'moon' : 'sun'} size={20} active color={colors.content} />
-          </View>
-          <View style={styles.flex}>
-            <AppText variant="titleMedium">Dark appearance</AppText>
-            <AppText variant="bodySmall" color={colors.muted}>
-              {dark ? 'Dark palette, ink on paper inverted' : 'Light palette, ink on paper'}
-            </AppText>
-          </View>
-          <Animated.View style={[styles.track, { borderColor: colors.border }, trackStyle]}>
-            <Animated.View style={[styles.knob, { backgroundColor: dark ? colors.inverseContent : colors.panel }, knobStyle]} />
-          </Animated.View>
-        </GlassSurface>
-      </Pressable>
+    <Animated.View style={enter}>
+      <Card padding={SPACE.md} style={styles.row}>
+        <View ref={ref} collapsable={false} style={styles.measureAnchor} />
+        <View style={[styles.tile, { borderColor: colors.border }]}>
+          <Icon name={dark ? 'moon' : 'sun'} size={20} active color={colors.content} />
+        </View>
+        <View style={styles.flex}>
+          <AppText variant="titleMedium">Dark appearance</AppText>
+          <AppText variant="bodySmall" color={colors.muted}>
+            {dark ? 'Dark palette, ink on paper inverted' : 'Light palette, ink on paper'}
+          </AppText>
+        </View>
+        <Switch checked={dark} onCheckedChange={handleToggle} accessibilityLabel="Dark appearance" />
+      </Card>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  cardGap: { gap: SPACE.lg },
   measureAnchor: { position: 'absolute', top: '50%', right: 40, width: 4, height: 4 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   identityText: { flex: 1, gap: 2 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, padding: SPACE.md },
-  tile: { width: 40, height: 40, borderWidth: HAIRLINE, alignItems: 'center', justifyContent: 'center' },
-  track: { width: 52, height: 30, borderRadius: SHAPE.full, borderWidth: HAIRLINE, padding: 3, justifyContent: 'center' },
-  knob: { width: 22, height: 22, borderRadius: SHAPE.full },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
+  tile: { width: 40, height: 40, borderWidth: HAIRLINE, borderRadius: SHAPE.medium, alignItems: 'center', justifyContent: 'center' },
 });

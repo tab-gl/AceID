@@ -3,13 +3,13 @@ import { StyleSheet, View } from 'react-native';
 import { useAuth } from '@/auth/AuthProvider';
 import { useLoader } from '@/api/useLoader';
 import { fetchAccount, fetchConnectedApps, fetchSecurity, toProfile, type Profile } from '@/api/queries';
-import { useCountUp } from '@/motion';
-import { HAIRLINE, SPACE, TYPE } from '@/design-system/tokens';
+import { AnimatedBadge } from '@/components/animated-badge';
+import { Loader } from '@/components/loader';
+import { NumberTicker } from '@/components/number';
+import { SPACE } from '@/design-system/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
-import { Icon } from '@/icons/Icon';
 import type { ScreenProps } from '@/navigation/MainShell';
-import { ActionRow, Avatar, Card, ErrorState, Eyebrow } from '@/ui/primitives';
-import { LoadingBlock, LoadingIndicator } from '@/design-system/loading';
+import { ActionRow, Avatar, Card, ErrorState, Eyebrow, LoadingCard } from '@/ui/primitives';
 import { PageScroll } from '@/ui/PageScroll';
 import { AppText } from '@/ui/Text';
 
@@ -46,9 +46,6 @@ export function HomeScreen({ active, openTab }: ScreenProps) {
   );
 
   const data = loader.data;
-  const devices = useCountUp(data?.devices ?? null);
-  const apps = useCountUp(data?.apps ?? null);
-  const activity = useCountUp(data?.activity ?? null);
   const firstName = (data?.profile.displayName ?? session?.name ?? 'there').split(' ')[0];
 
   return (
@@ -73,24 +70,26 @@ export function HomeScreen({ active, openTab }: ScreenProps) {
                 {data.profile.email || 'No email on this ID'}
               </AppText>
               <View style={styles.badges}>
-                {data.profile.username ? <Badge text={`@${data.profile.username}`} /> : null}
-                <Badge
-                  text={data.verifiedEmail ? 'Email verified' : 'Email not verified'}
-                  icon={data.verifiedEmail ? 'verified' : 'alert'}
-                  tone={data.verifiedEmail ? 'neutral' : 'danger'}
-                />
+                {data.profile.username ? (
+                  <AnimatedBadge size="sm" status="neutral" showIcon={false}>
+                    {`@${data.profile.username}`}
+                  </AnimatedBadge>
+                ) : null}
+                <AnimatedBadge size="sm" status={data.verifiedEmail ? 'success' : 'danger'}>
+                  {data.verifiedEmail ? 'Email verified' : 'Email not verified'}
+                </AnimatedBadge>
               </View>
             </View>
           </View>
         </Card>
       ) : (
-        <LoadingBlock height={132} label="Loading your ID" />
+        <LoadingCard height={132} />
       )}
 
       <View style={styles.stats}>
-        <Stat index={1} label="Devices" value={devices} loading={!data} />
-        <Stat index={2} label="Apps" value={apps} loading={!data} />
-        <Stat index={3} label="Events" value={activity} loading={!data} />
+        <Stat index={1} label="Devices" value={data?.devices ?? null} loading={!data} />
+        <Stat index={2} label="Apps" value={data?.apps ?? null} loading={!data} />
+        <Stat index={3} label="Events" value={data?.activity ?? null} loading={!data} />
       </View>
 
       <Eyebrow>Manage</Eyebrow>
@@ -106,39 +105,22 @@ export function HomeScreen({ active, openTab }: ScreenProps) {
 }
 
 function Stat({ index, label, value, loading }: { index: number; label: string; value: number | null; loading: boolean }) {
-  const { colors } = useTheme();
   return (
     <Card index={index} padding={SPACE.md} style={styles.stat}>
       <Eyebrow>{label}</Eyebrow>
       {loading || value === null ? (
-        <LoadingIndicator size={22} accessibilityLabel={`Loading ${label}`} />
+        <Loader variant="dots" size={22} label={`Loading ${label}`} />
       ) : (
-        <AppText style={[TYPE.displayMedium, { color: colors.content }, styles.hero]}>{String(value)}</AppText>
+        <NumberTicker value={value} className="text-4xl font-semibold text-foreground" />
       )}
     </Card>
   );
 }
 
-function Badge({ text, icon, tone = 'neutral' }: { text: string; icon?: 'verified' | 'alert'; tone?: 'neutral' | 'danger' }) {
-  const { colors } = useTheme();
-  const color = tone === 'danger' ? colors.danger : colors.muted;
-  return (
-    <View style={[styles.badge, { borderColor: tone === 'danger' ? colors.danger : colors.border }]}>
-      {icon ? <Icon name={icon} size={13} color={color} /> : null}
-      <AppText variant="bodySmall" color={color} style={styles.badgeText}>
-        {text}
-      </AppText>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  hero: { fontSize: 40, lineHeight: 42 },
-  badgeText: { fontSize: 12 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   identityText: { flex: 1, gap: 3 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.xs, marginTop: SPACE.xs },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: HAIRLINE, paddingHorizontal: 8, paddingVertical: 3 },
   stats: { flexDirection: 'row', gap: SPACE.sm },
   stat: { flex: 1, gap: SPACE.xs, minHeight: 92, justifyContent: 'space-between' },
   hint: { marginTop: SPACE.sm },

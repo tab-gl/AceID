@@ -1,3 +1,4 @@
+import './global.css';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
